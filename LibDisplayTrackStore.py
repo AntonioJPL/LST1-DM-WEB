@@ -64,6 +64,16 @@ valdif=60.
 
 #General
 generallog = []
+generalData = []
+generalTypes = {
+    "1" : "Track",
+    "2" : "Park-out",
+    "3" : "Park-in",
+    "4" : "GoToPos"
+}
+
+
+selectedType = 0
 
 #Used in FigureTrack function
 def make_patch_spines_invisible(ax):
@@ -159,7 +169,7 @@ def getRepos(filename,cmdstring):
         xbeg.append(tps)
     return xbeg  
 
-#Used in GenerateFig function. Returns df value with is a pandas.DataFrame Object containing the date, ra, dec between the given tmin and tmax values in the DrivePosition file 
+#Used in GenerateFig function. Returns df value which is a pandas.DataFrame Object containing the date, ra, dec between the given tmin and tmax values in the DrivePosition file 
 def getPos(filename,tmin,tmax):    
     
     try:
@@ -338,12 +348,13 @@ def getLoadPin(filename2,tmin,tmax):
                 df = pd.concat([df2,df],ignore_index=True)
     return df
 #Used in checkDate and checkDatev2
-def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",fichierhtml="",addtext='',ra=None,dec=None):
+def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
+    
     print("GenerateFig %s %s %s %s %s %s %s "%(filename,filename2,filename3,tmin,tmax,ttrack,figname))
-    if ra is not None:
+    """   if ra is not None:
         addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S') + ' RA=%s Dec=%s'%(ra,dec))
     else:
-        addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S'))
+        addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S')) """
 
     #Position log.
     dfpos = getPos(filename,tmin,tmax)
@@ -371,14 +382,52 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     #getTorque(filename4,tmin,tmax)
     dftorque = getTorqueNew(filename4,tmin,tmax)
     #print(dftorque)
-        
-    FigureTrack(tmin,tmax,cmd_status,figname,addtext,fichierhtml,dfpos,dfloadpin,dftrack,dftorque)
+    dataLine = {}
+    dataLine["type"] = []
+    dataLine["Sdate"] = []
+    dataLine["Stime"] = []
+    dataLine["Edate"] = []
+    dataLine["Etime"] = []
+    dataLine["RA"] = []
+    dataLine["DEC"] = []
+    dataLine["img"] = []
+    dataLine["addText"] = []
+    dataLine["position"] = []
+    dataLine["loadPin"] = []
+    dataLine["track"] = []
+    dataLine["torque"] = []
+    dataLine["accuracy"] = []
+    dataLine["bendModel"] = []
+    dataLine["type"].append(type)
+    dataLine["Stime"].append(str(datetime.fromtimestamp(tmin).strftime("%H:%M:%S")))
+    dataLine["Sdate"].append(str(datetime.fromtimestamp(tmin).strftime("%Y-%m-%d")))
+    dataLine["Etime"].append(str(datetime.fromtimestamp(tmax).strftime("%H:%M:%S")))
+    dataLine["Edate"].append(str(datetime.fromtimestamp(tmax).strftime("%Y-%m-%d")))
+    dataLine["RA"].append(ra)
+    dataLine["DEC"].append(dec)
+    dataLine["img"].append(figname)
+    dataLine["addText"].append(addtext)
+    if dfpos is not None:
+        dataLine["position"].append(dfpos.to_json())
+    if dfloadpin is not None:
+        dataLine["loadPin"].append(dfloadpin.to_json())
+    if dftrack is not None:
+        dataLine["track"].append(dftrack.to_json())
+    if dftorque is not None:
+        dataLine["torque"].append(dftorque.to_json())
+    #FigureTrack(tmin,tmax,cmd_status,figname,addtext,fichierhtml,dfpos,dfloadpin,dftrack,dftorque)
     if dfacc is not None:
-        FigAccuracyTime(figname,addtext,fichierhtml,dfacc)
+        dataLine["accuracy"].append(dfacc.to_json())
+        #FigAccuracyTime(figname,addtext,fichierhtml,dfacc)
 #        FigAccuracyHist(figname,fichierhtml,dfacc)
     #I'm Having Issues with the FigRADec function as it throws an astronomy specific error When creating the AltAz object on line: 502 -- THIS 2 LINES BELOW WERE UNCOMMENTED!!
     if dfbm is not None:
-        FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack)    
+        dataLine["bendModel"].append(dfbm.to_json())
+        #FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack)  
+    data = []
+    data.append(dataLine)  
+    req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
+    data.hola
 
         
     
@@ -754,12 +803,14 @@ def checkallactions(logsorted):
         
     #print("%s %s"%(action,actiondate))
 
-#Used in checkDateV2
+#Used in checkDateV2 Gets the regulation parameters for Elevation and Azimuth from the cmd
 def getRegulParameters(param,paramline,begtrack):
     paramout=""
     for i in range(len(param)-1,-1,-1):
         if param[i]<begtrack:
             for j in range(7,len(paramline[i].split(" "))):
+                #print(j)
+                #print(str(paramline[i].split(" ")))
                 paramout+=str(paramline[i].split(" ")[j])
                 paramout+=" "
             break
@@ -769,7 +820,7 @@ def getRegulParameters(param,paramline,begtrack):
 
          
 #Used in GetAllDate function
-def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,filename4,figname,fichierhtml,zoom=0,action="",lastone=0,azparam=None,azparamline=None,elparam=None,elparamline=None,ra=None,dec=None):
+def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,filename4,figname,type,zoom=0,action="",lastone=0,azparam=None,azparamline=None,elparam=None,elparamline=None,ra=None,dec=None):
     #print("beg   %s"%(beg))
     #print("end   %s"%(end))
     #print("error %s"%(error))
@@ -782,7 +833,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
     beg_ok=[]
     end_ok=[]
     cmd_status=[]
-
+    
 
 
 
@@ -834,20 +885,21 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
                 if track[j]<beg_ok[i] :
  #                   if (beg_ok[i]-track[j])< timedelta(minutes=6):
                     if (beg_ok[i]-track[j])< (6*60):
+                        #print(datetime.fromtimestamp(track[j]))
                         trackok[i] = track[j]
                         raok[i] = ra[j]
                         decok[i] = dec[j]
                 else :
                     continue
-
+    #Used un GenerateFig
     addtext=''     
     if azparamline is not None:
         addtext = "Az " + getRegulParameters(azparam,azparamline,beg_ok[-1])
     if elparamline is not None:
         addtext += "El " + getRegulParameters(elparam,elparamline,beg_ok[-1])
- 
     raok2 = None
     decok2 = None
+    #print(type)
 
     if lastone == 0:
         #for i in range(0,1):
@@ -857,15 +909,23 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             endname = datetime.fromtimestamp(end_ok[i], tz=pytz.utc)
             sbegname = begname.strftime("%Y%m%d_%Hh%Mm%Ss")
             sendname = endname.strftime("%Y%m%d_%Hh%Mm%Ss")
+            #print(sbegname)
+            #print(sendname)
             figname = "_%s_%s"%(sbegname,sendname) + ".png"
             figname = figpre + figname.replace(":","")
+            #print(figname)
             trackok2 = trackok[i]
             if ra is not None:
                 raok2 = raok[i]
                 decok2 = decok[i]
             #pst = pytz.timezone('UTC')
             #trackok2 = pst.localize(trackok2)
-            
+            #print(trackok2)
+            #print(raok2)
+            #print(decok2)
+            #print(datetime.fromtimestamp(beg_ok[i]))
+            #print(datetime.fromtimestamp(end_ok[i]))
+            #print(end_ok[i]-beg_ok[i])
             if figname.find("Track") != -1 and (end_ok[i]-beg_ok[i])<5 :
                 ii=0
                 #print("Too short")
@@ -878,8 +938,8 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
                 if zoom==1:
                     tmin = tmax-200
                     tmax = tmax
-                GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,
-                          cmd_status[i],trackok2,figname.replace(" ",""),fichierhtml,addtext,raok2,decok2)
+                #print(filename,filename2,filename3,filename4,tmin,tmax, cmd_status[i],trackok2,figname.replace(" ",""),fichierhtml,addtext,raok2,decok2,"\n")
+                GenerateFig(filename,filename2,filename3,filename4,tmin,tmax, cmd_status[i],trackok2,figname.replace(" ",""),type,addtext,raok2,decok2)
     else:
 
         #print("%s T=%s => Duration=%s Track Start %s"%(i,beg_ok[i],end_ok[i]-beg_ok[i],trackok[i]))
@@ -907,7 +967,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             if zoom==1:
                 tmin = tmax-200
                 tmax = tmax
-            GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status[-1],trackok2,figname.replace(" ",""),fichierhtml,addtext,raok2,decok2)
+            GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status[-1],trackok2,figname.replace(" ",""),type,addtext,raok2,decok2)
 
 #Starts the HTML structure of thte document setting the Title of the page #NOT USED ANYMORE
 def starthtmlfile(fichierhtml,dirname):
@@ -986,14 +1046,13 @@ def endhtmlfile(logsorted):
         logs.append(data)
         data = {}
     #print(logs)
-    #TODO Last value not sent - CHECK IT !!
-    req = requests.post("http://127.0.0.1:8000/storage/store", json=logs)
+    req = requests.post("http://127.0.0.1:8000/storage/storeLogs", json=logs)
     print(req.json()["Message"])
 
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     
-    dirname = "./DriveOutput/Log_" + filename
+    dirname = "./DriveMonitoringApp/DataStorage/static/img/Log_" + filename
     dirnamehtml = dirname
 
     generallog.clear()
@@ -1041,62 +1100,51 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
-    endhtmlfile(generallogsorted)
+    #endhtmlfile(generallogsorted)
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
 
-    """ if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+    if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
     	if path.exists(dirname)==False :
              os.mkdir(dirname)
              
     	#print(dirname)
- 
-    	fichierhtml = open(dirnamehtml+".html", "w")
-    	starthtmlfile(fichierhtml,filename)
-    	if path.exists(dirname)==False : #Duplicated??
-    	    os.mkdir(dirname)
 
-
-    
     if len(trackbeg) != 0:
         if path.exists(dirname+"/Track")==False :
                 os.mkdir(dirname+"/Track")
-        fichierhtml.write("<section class='tracks'>\n")
-        fichierhtml.write("<h2>Track</h2>")
         print("====== Track =======")
-        #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",fichierhtml,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
-        fichierhtml.write("</section>\n")
+        selectedType = "1"
+        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
 
     if lastone ==0 :
         if len(parkoutbeg) != 0:
             if path.exists(dirname+"/Parkout")==False :
                     os.mkdir(dirname+"/Parkout")
-            fichierhtml.write("<section class='parkouts'>\n")
-            fichierhtml.write("<h2>Park Out</h2>")
             print("====== Parkout =======")
-            #checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",fichierhtml,0,"ParkOut")
-            fichierhtml.write("</section>\n")
+            selectedType = "2"
+            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
 
         if len(parkinbeg) != 0:
             if path.exists(dirname+"/Parkin")==False :
                     os.mkdir(dirname+"/Parkin")
-            fichierhtml.write("<section class='parkins'>\n")
-            fichierhtml.write("<h2>Park In</h2>")
             print("====== Parkin =======")
-            #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",fichierhtml,1,"ParkIn")
-            #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",fichierhtml,2,"ParkIn")
-            fichierhtml.write("</section>\n")
+            selectedType = "3"
+            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
+            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],2,"ParkIn")
 
         if len(gotobeg) != 0:
             if path.exists(dirname+"/GoToPos")==False :
                     os.mkdir(dirname+"/GoToPos")
-            fichierhtml.write("<section class='gotopos'>\n")
-            fichierhtml.write("<h2>GoToPos</h2>")
             print("====== GoToPos =======")
-            #checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",fichierhtml,0,"GoToPsition")
-            fichierhtml.write("</section>\n")
+            selectedType = "4"
+            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
     
         if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
-            endhtmlfile(fichierhtml,generallogsorted) """
+            endhtmlfile(generallogsorted) 
+            #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
+            print(generalData)
+            
+            #print(req.json()["Message"])
 
     
 #Function to generate filenames for all the logs. Used in plotstrangefeature.

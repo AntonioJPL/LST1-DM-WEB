@@ -13,7 +13,7 @@ database = MongoDb
 def index(request):
     return database.getData(database)
 @csrf_exempt
-def store(request):
+def storeLogs(request):
     if(request.method == 'POST'):
         userdict = json.loads(str(request.body,encoding='utf-8'))
         dictNewValues = []
@@ -31,6 +31,27 @@ def store(request):
             return JsonResponse({"Message": "The data has been stored successfully."})
         else:
             return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
+@csrf_exempt
+def storeData(request):
+    if(request.method == 'POST'):
+        print(json.loads(str(request.body,encoding='utf-8')))
+        """ userdict = request.body
+        #userdict = json.loads(str(request.body,encoding='utf-8'))
+        dictNewValues = []
+        correct = True
+        for item in userdict:
+            print(len(item)) 
+            if database.checkDuplicatedValues(database, item["Time"], item["Command"], item["Date"]) == False:
+                dictNewValues.append(item)
+        #print(dictNewValues)
+        if len(dictNewValues) > 0:
+            correct = database.storeData(database, dictNewValues)
+        else:
+            return JsonResponse({"Message": "There was no new data to store."})
+        if correct:
+            return JsonResponse({"Message": "The data has been stored successfully."})
+        else:
+            return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."}) """
 def update(request):
     return database.updateData(database)
 def delete(request):

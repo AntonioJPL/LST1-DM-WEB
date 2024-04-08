@@ -932,62 +932,59 @@ def endhtmlfile(logsorted):
     isinerror=0
     isstopped=0
     isfinished=0
-    print(logsorted)
+    #print(logsorted)
     action=""
     actiondate=0
     data = {}
-    print(logsorted[341][1])
-    for i in range(0,len(logsorted)+1):
-        if i <= len(logsorted):
-            if logsorted[i][1].find("action error")!= -1 :
-                isinerror=1
-            if logsorted[i][1].find("StopDrive")!= -1 :
-                isstopped=1
-            if action.find("Park_Out")!= -1 and logsorted[i][1].find("Park_Out Done")!= -1 :
-                isfinished=1
-            if action.find("Park_In")!= -1 and logsorted[i][1].find("Park_In Done")!= -1 :
-                isfinished=1
-            if action.find("GoToPosition")!= -1 and logsorted[i][1].find("GoToTelescopePosition Done")!= -1 :
-                isfinished=1
-            if action.find("Start Tracking")!= -1 and logsorted[i][1].find("Start_Tracking Done received")!= -1 :
-                isfinished=1
-            if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1 or i==(len(logsorted)-1):
-                #print(action)
-                if action != "":
-                    if isinerror==1:
-                        data["LogStatus"] = "Error"
+    for i in range(0,len(logsorted)):
+        if logsorted[i][1].find("action error")!= -1 :
+            isinerror=1
+        if logsorted[i][1].find("StopDrive")!= -1 :
+            isstopped=1
+        if action.find("Park_Out")!= -1 and logsorted[i][1].find("Park_Out Done")!= -1 :
+            isfinished=1
+        if action.find("Park_In")!= -1 and logsorted[i][1].find("Park_In Done")!= -1 :
+            isfinished=1
+        if action.find("GoToPosition")!= -1 and logsorted[i][1].find("GoToTelescopePosition Done")!= -1 :
+            isfinished=1
+        if action.find("Start Tracking")!= -1 and logsorted[i][1].find("Start_Tracking Done received")!= -1 :
+            isfinished=1
+        if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1 or i==(len(logsorted)-1):
+            #print(action)
+            if action != "":
+                if isinerror==1:
+                    data["LogStatus"] = "Error"
+                else:
+                    if isstopped==1:
+                        data["LogStatus"] = "Stopped"
                     else:
-                        if isstopped==1:
-                            data["LogStatus"] = "Stopped"
+                        if isfinished==1:
+                            data["LogStatus"] = "Finished"
                         else:
-                            if isfinished==1:
-                                data["LogStatus"] = "Finished"
-                            else:
-                                data["LogStatus"] = "Unknown"
-                isinerror=0
-                isstopped=0
-                isfinished=0
-                action=logsorted[i][1]
-                actiondate=logsorted[i][0]
-            else:
-                data["LogStatus"] = None
+                            data["LogStatus"] = "Unknown"
+            isinerror=0
+            isstopped=0
+            isfinished=0
+            action=logsorted[i][1]
+            actiondate=logsorted[i][0]
+        else:
+            data["LogStatus"] = None
 
-        if i-1 != -1:
-            if len(logsorted[i-1][1].split(" ")) <= 2:
-                #print(logsorted[i][1])
-                data["Command"] = logsorted[i-1][1]
-                data["Status"] = None
-            else:
-                #print(logsorted[i][1].split(" ")[0])
-                logParts = logsorted[i-1][1].split(" ")
-                data["Command"] = logParts[0]
-                data["Status"] = logParts[1]+" "+logParts[2]
+        if len(logsorted[i][1].split(" ")) <= 2:
+            #print(logsorted[i][1])
+            data["Command"] = logsorted[i][1]
+            data["Status"] = None
+        else:
+            #print(logsorted[i][1].split(" ")[0])
+            logParts = logsorted[i][1].split(" ")
+            data["Command"] = logParts[0]
+            data["Status"] = logParts[1]+" "+logParts[2]
 
-            data["Date"] = logsorted[i-1][0].strftime("%Y-%m-%d")
-            data["Time"] = logsorted[i-1][0].strftime("%H:%M:%S")
-        
-            logs.append(data)
-            data = {}
+        data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
+        data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
+    
+        logs.append(data)
+        data = {}
     #print(logs)
     #TODO Last value not sent - CHECK IT !!
     req = requests.post("http://127.0.0.1:8000/storage/store", json=logs)

@@ -6,6 +6,7 @@ import json
 from bson.json_util import dumps, loads
 from bson import ObjectId
 import os
+import glob
 
 class MongoDb:
 
@@ -13,6 +14,7 @@ class MongoDb:
     dbname = my_client['Drive-Monitoring']
     collection_logs = dbname["Logs"]
     collection_data = dbname["Data"]
+    img_rute = "/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/"
    
 
     def __init__(self):
@@ -43,22 +45,40 @@ class MongoDb:
         print(delete_data)
         return HttpResponse("Deleting an objecth with the indicated id")
 
-    def listData(self, date):
+    def listLogs(self, date):
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !!
-        data = list(self.collection_logs.find().sort({"Time": -1}).sort({"Date": +1}))
+        data = list(self.collection_logs.find().sort({"Stime": -1}).sort({"Sdate": +1}))
+        logs = list(self.dbname["LogStatus"].find())
+        commands = list(self.dbname["Commands"].find())
+        comStatus = list(self.dbname["CommandStatus"].find())
         for element in data:
             element["_id"] = str(element["_id"])
             if element["LogStatus"] is not None:
-                element["LogStatus"] = self.dbname["LogStatus"].find_one({"_id": ObjectId(element["LogStatus"])}, {"_id":0, "name":1})
-                element["LogStatus"] = element["LogStatus"]["name"]
-            element["Command"] = self.dbname["Commands"].find_one({"_id": ObjectId(element["Command"])}, {"_id":0, "name":1})
-            element["Command"] = element["Command"]["name"]
+                element["LogStatus"] = [searchedElement["name"] for searchedElement in logs if searchedElement["_id"] == ObjectId(element["LogStatus"])]
+                element["LogStatus"] = element["LogStatus"][0]
+            element["Command"] = [searchedElement["name"] for searchedElement in commands if searchedElement["_id"] == ObjectId(element["Command"])]
+            element["Command"] = element["Command"][0]
             if element["Status"] is not None:
-                element["Status"] = self.dbname["CommandStatus"].find_one({"_id": ObjectId(element["Status"])}, {"_id":0, "name":1})
-                element["Status"] = element["Status"]["name"]
+                element["Status"] = [searchedElement["name"] for searchedElement in comStatus if searchedElement["_id"] == ObjectId(element["Status"])]
+                element["Status"] = element["Status"][0]
+        return data
+    def listData(self, date):
+        #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
+        data = list(self.collection_data.find().sort({"Stime": -1}).sort({"Sdate": +1}))
+        types = list(self.dbname["Types"].find())
+        print(types)
+        for element in data:
+            element["_id"] = str(element["_id"])
+            if element["type"] is not None:
+                element["type"] = [searchedElement["name"] for searchedElement in types if searchedElement["_id"] == ObjectId(element["type"])]
+                element["type"] = element["type"][0]
+            images = glob.glob(self.img_rute+element["img"]+"*")
+            for i in range(0, len(images)):
+                images[i] = images[i].replace(self.img_rute, "static/")
+            element["img"] = images
         return data
     
-    def storeData(self, data):
+    def storeLogs(self, data):
         for i in range(0, len(data)):
             if data[i]["LogStatus"] != None:
                 statusId = self.dbname["LogStatus"].find_one({"name":data[i]["LogStatus"]}, {"name": 0})
@@ -76,11 +96,28 @@ class MongoDb:
             return True
         except Exception:
             return False
+    def storeGeneralData(self, data):
+        typeId = self.dbname["Types"].find_one({"name": data["type"]}, {"name": 0})
+        data["type"] = str(typeId["_id"])
+        print(self.dbname["Data"].find_one({"type": data["type"], "Stime": data["Stime"], "Sdate": data["Sdate"], "Edate": data["Edate"], "Etime": data["Etime"]}))
+        if self.dbname["Data"].find_one({"type": data["type"], "Stime": data["Stime"], "Sdate": data["Sdate"], "Edate": data["Edate"], "Etime": data["Etime"]}) == None:
+            try:
+                self.dbname["Data"].insert_one(data)
+                return True
+            except Exception:
+                return False
     
-    def checkDuplicatedValues(self, Time, Command, Date):
+    def checkDuplicatedLogs(self, Time, Command, Date):
         commandId = self.dbname["Commands"].find_one({"name": Command}, {"name": 0})
         commandId = str(commandId["_id"])
         if self.dbname["Logs"].find_one({"Time": Time, "Command": commandId, "Date": Date}) != None:
+            return True
+        else:
+            return False
+    def checkDuplicatedValues(self, type, date, time):
+        typeId = self.dbname["Types"].find_one({"name": type}, {"name": 0})
+        typeId = str(typeId["_id"])
+        if self.dbname["Data"].find_one({"type": type, "Sdate": date, "Stime": time}) != None:
             return True
         else:
             return False
@@ -101,4 +138,4 @@ class MongoDb:
         response["times"] = times
         return response
     def isData(self):
-        return True if len(self.dbname["Logs"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
+        return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False

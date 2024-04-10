@@ -375,7 +375,7 @@ const loadFilters = ()=>{
     })
     let clearButton = document.createElement("button")
     clearButton.classList.add("hover:bg-[#325D88]", "bg-[#6585a6]", "text-white", "font-semibold", "p-2", "rounded-lg", "border-[#325D88]", "border-2", "mt-3", "w-[45%]", "self-center")
-    clearButton.appendChild(document.createTextNode("Restore dafaults"))
+    clearButton.appendChild(document.createTextNode("Restore defaults"))
     clearButton.addEventListener("click", (e)=>{
         e.preventDefault()
         selectedFilters = {}

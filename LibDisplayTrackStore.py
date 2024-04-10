@@ -238,6 +238,7 @@ def getPrecision(filename,tmin,tmax):
     maskT = np.logical_and(masktmin,masktmax)
     df = df[maskT]
 
+
     maskT1 = df['T']<1605657600
     maskt2 = df['T']>1611057600
     maskt3 = df['T']<1615161600
@@ -252,8 +253,15 @@ def getPrecision(filename,tmin,tmax):
     df['Zdmin'] = df['Zdmin'] * 3600
     df['Zdmax'] = df['Zdmax'] * 3600
     
+    """ if tmin == 1706819529.0:
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(df.loc[[15329]])
+            print(df.loc[[15330]])
+            print(df.loc[[15331]])
+            print(tmin)
+            print(tmax) """
     mask0_1 = df['Azmean']!=0.
-    mask0_2 = df['Zdmean']!=0.
+    mask0_2 = df['Zdmean']!=0. #This is why data is being ignored
     mask0 = np.logical_and(mask0_2,mask0_1)
     df = df[mask0]
     return df
@@ -368,7 +376,6 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     if ttrack != 0:
         dftrack = getTrackNew(filename3,tmin,tmax)
         dfacc = getPrecision(filename.replace("DrivePosition","Accuracy"),tmin,tmax)
-        #print(dfacc)
         #print(dftrack)
     
     dfloadpin = getLoadPin(filename2,tmin,tmax)
@@ -427,6 +434,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     data = []
     data.append(dataLine)  
     req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
+    data.hola
 
         
     
@@ -998,37 +1006,30 @@ def endhtmlfile(logsorted):
     action=""
     actiondate=0
     data = {}
+    commandPosition = None
     for i in range(0,len(logsorted)):
-        if logsorted[i][1].find("action error")!= -1 :
-            isinerror=1
-        if logsorted[i][1].find("StopDrive")!= -1 :
-            isstopped=1
-        if action.find("Park_Out")!= -1 and logsorted[i][1].find("Park_Out Done")!= -1 :
-            isfinished=1
-        if action.find("Park_In")!= -1 and logsorted[i][1].find("Park_In Done")!= -1 :
-            isfinished=1
-        if action.find("GoToPosition")!= -1 and logsorted[i][1].find("GoToTelescopePosition Done")!= -1 :
-            isfinished=1
-        if action.find("Start Tracking")!= -1 and logsorted[i][1].find("Start_Tracking Done received")!= -1 :
-            isfinished=1
-        if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1 or i==(len(logsorted)-1):
-            #print(action)
-            if action != "":
-                if isinerror==1:
-                    data["LogStatus"] = "Error"
-                else:
-                    if isstopped==1:
-                        data["LogStatus"] = "Stopped"
-                    else:
-                        if isfinished==1:
-                            data["LogStatus"] = "Finished"
-                        else:
-                            data["LogStatus"] = "Unknown"
-            isinerror=0
-            isstopped=0
-            isfinished=0
-            action=logsorted[i][1]
-            actiondate=logsorted[i][0]
+        #TODO - Fix the finish over the stop !!
+        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1:
+            if logsorted[i][1].find("action error")!= -1 and commandPosition != None:        
+                logs[commandPosition]["LogStatus"] = "Error"
+                commandPosition = None
+            if logsorted[i][1].find("StopDrive")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Stopped"
+                commandPosition = None
+            if logsorted[i][1].find("Park_Out Done")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+            if logsorted[i][1].find("Park_In Done")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+            if logsorted[i][1].find("GoToTelescopePosition Done")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+            if logsorted[i][1].find("Start_Tracking Done received")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+        if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1:
+            commandPosition = i
         else:
             data["LogStatus"] = None
 
@@ -1104,6 +1105,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #checkallactions(generallogsorted)
     #endhtmlfile(generallogsorted)
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+    endhtmlfile(generallogsorted)
 
     if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
     	if path.exists(dirname)==False :
@@ -1141,10 +1143,9 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             selectedType = "4"
             checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
     
-        if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
-            endhtmlfile(generallogsorted) 
+        #if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
-            print(generalData)
+            #print(generalData)
             
             #print(req.json()["Message"])
 

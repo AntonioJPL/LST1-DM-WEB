@@ -33,6 +33,7 @@ def storeLogs(request):
             return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
 @csrf_exempt
 def storeData(request):
+    #TODO - Needs optimization as it takes a LOT of time to store all the data
     if(request.method == 'POST'):
         body = json.loads(str(request.body,encoding='utf-8'))
         generalData = {}
@@ -45,17 +46,28 @@ def storeData(request):
         generalData["DEC"] = body[0]["DEC"][0]
         imagePattern = body[0]["img"][0].split("/")
         imageSpltiEnd = imagePattern[-1].split(".")
-        imageFinal = imagePattern[-4]+"/"+imagePattern[-3]+"/"+imagePattern[-2]+"/"+imageSpltiEnd[0]
-        generalData["img"] = imageFinal
+        finalImage = imagePattern[-4]+"/"+imagePattern[-3]+"/"+imagePattern[-2]+"/"+imageSpltiEnd[0]
+        generalData["img"] = finalImage
         generalData["addText"] = body[0]["addText"][0]
         #TODO - Store the rest of the data
-        print(body[0])
-        """ position = json.loads(body[0]["position"][0])
-        pinData = json.loads(body[0]["loadPin"][0])
-        track = json.loads(body[0]["track"][0])
-        torque = json.loads(body[0]["torque"][0])
-        accuracy = json.loads(body[0]["accuracy"][0])
-        bendModel = json.loads(body[0]["bendModel"][0]) """
+        if body[0]["position"][0] is not None:
+            position = json.loads(body[0]["position"][0])
+            database.storePosition(database, position)
+        if body[0]["loadPin"][0] is not None:
+            pinData = json.loads(body[0]["loadPin"][0])
+            database.storeLoadPin(database, pinData)
+        if body[0]["track"][0] is not None:
+            track = json.loads(body[0]["track"][0])
+            database.storeTrack(database, track)
+        if body[0]["torque"][0] is not None:
+            torque = json.loads(body[0]["torque"][0])
+            database.storeTorque(database, torque)
+        if body[0]["accuracy"][0] is not None:
+            accuracy = json.loads(body[0]["accuracy"][0])
+            database.storeAccuracy(database, accuracy)
+        if body[0]["bendModel"][0] is not None:
+            bendModel = json.loads(body[0]["bendModel"][0])
+            database.storeBendModel(database, bendModel)
         correct = True
         if database.checkDuplicatedValues(database, generalData["type"], generalData["Sdate"], generalData["Stime"]) == False:
             correct = database.storeGeneralData(database, generalData)
@@ -88,7 +100,6 @@ def getLogs(request):
         else:
             return JsonResponse({"Message": "There is no data to show"})
 def getData(request):
-    #TODO - Needs optimitation it takes 2.10 secs
     if request.method == "GET":
         if database.isData(database) == True:
             data = {"data": database.listData(database, database.getLatestDate(database))}

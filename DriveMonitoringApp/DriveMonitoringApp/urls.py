@@ -17,12 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from DataStorage import views as Sv
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('storage', Sv.home),
     path('storage/index', Sv.index),
-    path('storage/store', Sv.store),
+    path('storage/storeLogs', Sv.storeLogs),
+    path('storage/storeData', Sv.storeData),
+    path('storage/getLogs', Sv.getLogs),
     path('storage/getData', Sv.getData),
     path('storage/update', Sv.update),
     path('storage/delete', Sv.delete),
@@ -30,4 +34,4 @@ urlpatterns = [
 
 
 
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

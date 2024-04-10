@@ -10,8 +10,9 @@ const body = document.querySelector("body")
  * Creation of the Summary/Logs section and the interaction between tabs
  */
 let contenSection = document.querySelector("div.textData")
+contenSection.classList.add("gap-y-3")
 let sumSection = document.createElement("div")
-sumSection.classList.add("w-[66%]", "justify-self-center")
+sumSection.classList.add("w-[66%]", "self-center")
 let divSummary = document.createElement("div")
 divSummary.classList.add("w-[50%]", "bg-[#325D88]", "flex", "justify-center", "items-center", "cursor-pointer", "rounded-tl-lg", "transition", "duration-300", "ease-in-out")
 let summaryLabel = document.createElement("p")
@@ -43,8 +44,11 @@ let summaryData = null
 let selectedFilters = {}
 
 const fetchLatestData = async() => {
-    serverRes = await fetch("http://127.0.0.1:8000/storage/getData")
+    let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
     .then(response => response.json())
+    let generalData = await fetch("http://127.0.0.1:8000/storage/getData")
+    .then(response => response.json())
+    showAllData(generalData.data)
     data = serverRes.data
     filters = serverRes.filters
     summaryData = data.filter(element => element.LogStatus != null)
@@ -92,7 +96,6 @@ const showLog = (e)=>{
         }
     }else{
         if(Object.keys(selectedFilters).length > 0){
-            console.log("I am inside brother not containing class")
             filterLogs()
         }else{
             printAllLogs()
@@ -237,7 +240,11 @@ divLogs.addEventListener("click", showLog)
 /**
  * Creation of the Filters section
  */
-let filSection = document.querySelector("div.filters")
+let filtersSection = document.querySelector("div.filters")
+filtersSection.classList.add("w-[25vw]", "fixed", "left-[2rem]", "top-[7.75rem]", "border-r-[#3e3f3a]", "border-r-[0.15rem]", "border-opacity-50", "h-[15rem]", "flex", "flex-col", "items_center")
+let filtersCard = document.createElement("div")
+filtersCard.classList.add("w-[95%]", "mt-5")
+filtersSection.appendChild(filtersCard)
 let sectionTitle = document.createElement("h3")
 sectionTitle.classList.add("text-lg", "self-center", "text-white", "w-full", "bg-[#325D88]", "rounded-t-lg", "text-center", "py-1")
 sectionTitle.appendChild(document.createTextNode("Filters"))
@@ -348,6 +355,7 @@ const loadFilters = ()=>{
     filterButton.appendChild(document.createTextNode("Filter data"))
     filterButton.addEventListener("click", (e)=>{
         e.preventDefault()
+        //TODO - Finish filtering the visual contents
         if(operationInput.value != "All" || dateInput.value != "All" || timeInput.value != "All"){
             selectedFilters["operation"] = operationInput.value
             selectedFilters["date"] = dateInput.value
@@ -367,7 +375,7 @@ const loadFilters = ()=>{
     })
     let clearButton = document.createElement("button")
     clearButton.classList.add("hover:bg-[#325D88]", "bg-[#6585a6]", "text-white", "font-semibold", "p-2", "rounded-lg", "border-[#325D88]", "border-2", "mt-3", "w-[45%]", "self-center")
-    clearButton.appendChild(document.createTextNode("Restore dafaults"))
+    clearButton.appendChild(document.createTextNode("Restore defaults"))
     clearButton.addEventListener("click", (e)=>{
         e.preventDefault()
         selectedFilters = {}
@@ -388,6 +396,77 @@ const loadFilters = ()=>{
     form.appendChild(divDateTime)
     form.appendChild(buttons)
     sectionBody.appendChild(form)
-    filSection.appendChild(sectionTitle)
-    filSection.appendChild(sectionBody)
+    filtersCard.appendChild(sectionTitle)
+    filtersCard.appendChild(sectionBody)
+}
+/**
+ * Function that represents all the data recieved from the database
+ */
+const showAllData = (data)=>{
+    data.sort(sortByTime)
+    let graphicContents = document.querySelector("div.graphicSection")
+    if( graphicContents == null){
+        graphicContents = document.createElement("div")
+        graphicContents.classList.add("w-[66%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
+    }else{
+        contenSection.removeChild(graphicContents)
+    }
+    data.forEach(element => {
+        let card = document.createElement("div")
+        card.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg")
+        let title = document.createElement("h3")
+        title.appendChild(document.createTextNode(element.type))
+        title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
+        let summary = document.createElement("section")
+        summary.classList.add("flex", "items-center", "justify-center", "border-b-[#3e3f3a]", "border-b-[0.15rem]", "border-opacity-50", "gap-x-5")
+        let labels = ["Start: ", "End: ", "RA: ", "DEC: "]
+        labels.forEach(label => {
+            let divParragraph = document.createElement("div")
+            divParragraph.classList.add("flex", "gap-x-1")
+            let pLabel = document.createElement("p")
+            pLabel.classList.add("font-semibold", "text-[#3e3f3a]")
+            pLabel.appendChild(document.createTextNode(label))
+            let pContent = document.createElement("p")
+            pContent.classList.add("text-[#3e3f3a]")
+            switch(true){
+                case label == "RA: ":
+                    pContent.appendChild(document.createTextNode(element.RA))
+                    break
+                case label == "DEC: ":
+                    pContent.appendChild(document.createTextNode(element.DEC))
+                    break
+                case label == "Start: ":
+                    pContent.appendChild(document.createTextNode(element.Stime))
+                    break
+                case label == "End: ":
+                    pContent.appendChild(document.createTextNode(element.Etime))
+                    break
+            }
+            if(!((pLabel.innerHTML == "RA: " || pLabel.innerHTML == "DEC: ") && element.RA == null)){
+                divParragraph.appendChild(pLabel)
+                divParragraph.appendChild(pContent)
+            }
+            summary.appendChild(divParragraph)
+        })
+        let histograms = document.createElement("section")
+        histograms.classList.add("flex", "flex-col", "gap-y-2", "my-2")
+        let imageArray = [...element.img]
+        imageArray.sort((a,b)=>{return a.length - b.length})
+        for (let i = 0; i < imageArray.length; i++) {         
+            let newImage = document.createElement("img")
+            newImage.setAttribute("src", imageArray[i])
+            newImage.classList.add("w-[95%]", "h-[25rem]", "self-center")
+            histograms.appendChild(newImage)
+        }
+
+        card.appendChild(title)
+        card.appendChild(summary)
+        card.appendChild(histograms)
+        graphicContents.appendChild(card)
+    });
+    contenSection.appendChild(graphicContents)
+}
+
+const sortByTime = (a,b) => {
+    return new Date(a.Sdate+" "+a.Stime)- new Date(b.Sdate+" "+b.Stime)
 }

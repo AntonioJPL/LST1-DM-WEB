@@ -64,6 +64,16 @@ valdif=60.
 
 #General
 generallog = []
+generalData = []
+generalTypes = {
+    "1" : "Track",
+    "2" : "Park-out",
+    "3" : "Park-in",
+    "4" : "GoToPos"
+}
+
+
+selectedType = 0
 
 #Used in FigureTrack function
 def make_patch_spines_invisible(ax):
@@ -159,7 +169,7 @@ def getRepos(filename,cmdstring):
         xbeg.append(tps)
     return xbeg  
 
-#Used in GenerateFig function. Returns df value with is a pandas.DataFrame Object containing the date, ra, dec between the given tmin and tmax values in the DrivePosition file 
+#Used in GenerateFig function. Returns df value which is a pandas.DataFrame Object containing the date, ra, dec between the given tmin and tmax values in the DrivePosition file 
 def getPos(filename,tmin,tmax):    
     
     try:
@@ -228,6 +238,7 @@ def getPrecision(filename,tmin,tmax):
     maskT = np.logical_and(masktmin,masktmax)
     df = df[maskT]
 
+
     maskT1 = df['T']<1605657600
     maskt2 = df['T']>1611057600
     maskt3 = df['T']<1615161600
@@ -242,8 +253,15 @@ def getPrecision(filename,tmin,tmax):
     df['Zdmin'] = df['Zdmin'] * 3600
     df['Zdmax'] = df['Zdmax'] * 3600
     
+    """ if tmin == 1706819529.0:
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(df.loc[[15329]])
+            print(df.loc[[15330]])
+            print(df.loc[[15331]])
+            print(tmin)
+            print(tmax) """
     mask0_1 = df['Azmean']!=0.
-    mask0_2 = df['Zdmean']!=0.
+    mask0_2 = df['Zdmean']!=0. #This is why data is being ignored
     mask0 = np.logical_and(mask0_2,mask0_1)
     df = df[mask0]
     return df
@@ -338,12 +356,13 @@ def getLoadPin(filename2,tmin,tmax):
                 df = pd.concat([df2,df],ignore_index=True)
     return df
 #Used in checkDate and checkDatev2
-def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",fichierhtml="",addtext='',ra=None,dec=None):
+def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
+    
     print("GenerateFig %s %s %s %s %s %s %s "%(filename,filename2,filename3,tmin,tmax,ttrack,figname))
-    if ra is not None:
+    """   if ra is not None:
         addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S') + ' RA=%s Dec=%s'%(ra,dec))
     else:
-        addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S'))
+        addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S')) """
 
     #Position log.
     dfpos = getPos(filename,tmin,tmax)
@@ -357,7 +376,6 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     if ttrack != 0:
         dftrack = getTrackNew(filename3,tmin,tmax)
         dfacc = getPrecision(filename.replace("DrivePosition","Accuracy"),tmin,tmax)
-        #print(dfacc)
         #print(dftrack)
     
     dfloadpin = getLoadPin(filename2,tmin,tmax)
@@ -371,14 +389,52 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     #getTorque(filename4,tmin,tmax)
     dftorque = getTorqueNew(filename4,tmin,tmax)
     #print(dftorque)
-        
-    FigureTrack(tmin,tmax,cmd_status,figname,addtext,fichierhtml,dfpos,dfloadpin,dftrack,dftorque)
+    dataLine = {}
+    dataLine["type"] = []
+    dataLine["Sdate"] = []
+    dataLine["Stime"] = []
+    dataLine["Edate"] = []
+    dataLine["Etime"] = []
+    dataLine["RA"] = []
+    dataLine["DEC"] = []
+    dataLine["img"] = []
+    dataLine["addText"] = []
+    dataLine["position"] = []
+    dataLine["loadPin"] = []
+    dataLine["track"] = []
+    dataLine["torque"] = []
+    dataLine["accuracy"] = []
+    dataLine["bendModel"] = []
+    dataLine["type"].append(type)
+    dataLine["Stime"].append(str(datetime.fromtimestamp(tmin).strftime("%H:%M:%S")))
+    dataLine["Sdate"].append(str(datetime.fromtimestamp(tmin).strftime("%Y-%m-%d")))
+    dataLine["Etime"].append(str(datetime.fromtimestamp(tmax).strftime("%H:%M:%S")))
+    dataLine["Edate"].append(str(datetime.fromtimestamp(tmax).strftime("%Y-%m-%d")))
+    dataLine["RA"].append(ra)
+    dataLine["DEC"].append(dec)
+    dataLine["img"].append(figname)
+    dataLine["addText"].append(addtext)
+    if dfpos is not None:
+        dataLine["position"].append(dfpos.to_json())
+    if dfloadpin is not None:
+        dataLine["loadPin"].append(dfloadpin.to_json())
+    if dftrack is not None:
+        dataLine["track"].append(dftrack.to_json())
+    if dftorque is not None:
+        dataLine["torque"].append(dftorque.to_json())
+    FigureTrack(tmin,tmax,cmd_status,figname,addtext,None,dfpos,dfloadpin,dftrack,dftorque)
     if dfacc is not None:
-        FigAccuracyTime(figname,addtext,fichierhtml,dfacc)
-#        FigAccuracyHist(figname,fichierhtml,dfacc)
+        dataLine["accuracy"].append(dfacc.to_json())
+        FigAccuracyTime(figname,addtext,None,dfacc)
+#        FigAccuracyHist(figname,None,dfacc)
     #I'm Having Issues with the FigRADec function as it throws an astronomy specific error When creating the AltAz object on line: 502 -- THIS 2 LINES BELOW WERE UNCOMMENTED!!
     if dfbm is not None:
-        FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack)    
+        dataLine["bendModel"].append(dfbm.to_json())
+        FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
+    data = []
+    data.append(dataLine)  
+    req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
+    data.hola
 
         
     
@@ -386,95 +442,96 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
 #Used in GenerateFig    
 def FigureTrack(tmin,tmax,cmd_status,figname,addtext,fichierhtml,dfpos,dfloadpin,dftrack,dftorque):
     print("FigureTrack %s %s"%(tmin,tmax))
-    fig = plt.figure(figsize = (20, 12))
-    plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0, hspace = 0.1)
-    
-    spec = gridspec.GridSpec(ncols=1, nrows=2,height_ratios=[2, 1])
-    host1 = fig.add_subplot(spec[0])
-    
-    formatter = mdates.DateFormatter("%H:%M:%S")
-    formatter.set_tzinfo(pytz.utc); 
-    plt.gca().xaxis.set_major_formatter(formatter)
-    
-    par1 = host1.twinx()
-    par2 = host1.twinx()
-    par2.spines["right"].set_position(("axes", 1.08))
-    
-    make_patch_spines_invisible(par2)
-    par2.spines["right"].set_visible(True)
-
-    lines = []
-    
-    if dfloadpin is not None:
-        mask107 = dfloadpin['LoadPin']==107
-        mask207 = dfloadpin['LoadPin']==207
-
-        p1, = host1.plot(dfloadpin[mask107]['T'],dfloadpin[mask107]['Load'], color='blue', label="Cable 107")
-        p1b, = host1.plot(dfloadpin[mask207]['T'],dfloadpin[mask207]['Load'], color='green', label="Cable 207")
-        lines.append(p1)
-        lines.append(p1b)
+    if os.path.exists(figname) == False:
+        fig = plt.figure(figsize = (20, 12))
+        plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0, hspace = 0.1)
         
-    p2, = par1.plot(dfpos['T'],dfpos['Az'], color='red', label="Azimuth")
-    lines.append(p2)
-    if dftrack is not None:
-        p2b, = par1.plot(dftrack['Tth'],dftrack['Azth'], color='red',ls='dashed', label="Azimuth Th.")
-        lines.append(p2b)
-    p3, = par2.plot(dfpos['T'],dfpos['ZA'], color='black', label="Zenith Angle")
-    lines.append(p3)
-    if dftrack is not None:
-        p3b, = par2.plot(dftrack['Tth'],dftrack['ZAth'], color='black',ls='dashed', label="Zenith Angle Th.")
-        lines.append(p3b)
-       
-    host1.set_xlabel("", fontsize=15)
-    host1.set_ylabel("Load [kg]", fontsize=15)
-    host1.set_title(figname, fontsize=15)
-    par1.set_ylabel("Azimuth [deg]", fontsize=15)
-    par2.set_ylabel("Zenith Angle [deg]", fontsize=15)
+        spec = gridspec.GridSpec(ncols=1, nrows=2,height_ratios=[2, 1])
+        host1 = fig.add_subplot(spec[0])
+        
+        formatter = mdates.DateFormatter("%H:%M:%S")
+        formatter.set_tzinfo(pytz.utc); 
+        plt.gca().xaxis.set_major_formatter(formatter)
+        
+        par1 = host1.twinx()
+        par2 = host1.twinx()
+        par2.spines["right"].set_position(("axes", 1.08))
+        
+        make_patch_spines_invisible(par2)
+        par2.spines["right"].set_visible(True)
 
-    host1.yaxis.label.set_color(p1.get_color())
-    par1.yaxis.label.set_color(p2.get_color())
-    par2.yaxis.label.set_color(p3.get_color())
+        lines = []
+        
+        if dfloadpin is not None:
+            mask107 = dfloadpin['LoadPin']==107
+            mask207 = dfloadpin['LoadPin']==207
 
-    tkw = dict(size=4, width=1.5)
-    host1.tick_params(axis='y', colors=p1.get_color(), **tkw)
-    par1.tick_params(axis='y', colors=p2.get_color(), **tkw)
-    par2.tick_params(axis='y', colors=p3.get_color(), **tkw)
-    host1.tick_params(axis='x', **tkw)
-          
-    host1.set_xlim(datetime.fromtimestamp(tmin, tz=pytz.utc),datetime.fromtimestamp(tmax, tz=pytz.utc))
-    host1.legend(lines, [l.get_label() for l in lines],fontsize=13)
-    
-    if cmd_status ==0:
-        host1.text(0., 1., 'ACTION FINISHED',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='green', fontsize=15)
-    if cmd_status ==2:
-        host1.text(0., 1., 'ACTION STOPPED BY USER',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='orange', fontsize=15)
-    if cmd_status ==1:
-        host1.text(0., 1., 'ACTION STOPPED BY ERROR',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='red', fontsize=15)
-    if cmd_status ==3:
-        host1.text(0., 1., 'CUSTOM PERIOD',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='blue', fontsize=15)
-    
-    host2 = fig.add_subplot(spec[1])
-    plt.gca().xaxis.set_major_formatter(formatter)
-    
-    if dftorque is not None:        
-        p13b, =host2.plot(dftorque['T'],dftorque['El1_mean'], color='chocolate',label="El S")
-        p23b, =host2.plot(dftorque['T'],dftorque['El2_mean'], color='red',label="El N")
-        p12b, =host2.plot(dftorque['T'],dftorque['Az1_mean'], color='lime',label="Az SE")
-        p22b, =host2.plot(dftorque['T'],dftorque['Az2_mean'], color='forestgreen',label="Az NE")
-        p32b, =host2.plot(dftorque['T'],dftorque['Az3_mean'], color='cyan',label="Az NW")
-        p42b, =host2.plot(dftorque['T'],dftorque['Az4_mean'], color='dodgerblue',label="Az SW")
-        host2.set_xlabel('Time', fontsize=15)
-        host2.set_ylabel('Torque [N.m]', fontsize=15)
-        host2.set_xlim(datetime.fromtimestamp(tmin, tz=pytz.utc),datetime.fromtimestamp(tmax, tz=pytz.utc))
+            p1, = host1.plot(dfloadpin[mask107]['T'],dfloadpin[mask107]['Load'], color='blue', label="Cable 107")
+            p1b, = host1.plot(dfloadpin[mask207]['T'],dfloadpin[mask207]['Load'], color='green', label="Cable 207")
+            lines.append(p1)
+            lines.append(p1b)
+            
+        p2, = par1.plot(dfpos['T'],dfpos['Az'], color='red', label="Azimuth")
+        lines.append(p2)
+        if dftrack is not None:
+            p2b, = par1.plot(dftrack['Tth'],dftrack['Azth'], color='red',ls='dashed', label="Azimuth Th.")
+            lines.append(p2b)
+        p3, = par2.plot(dfpos['T'],dfpos['ZA'], color='black', label="Zenith Angle")
+        lines.append(p3)
+        if dftrack is not None:
+            p3b, = par2.plot(dftrack['Tth'],dftrack['ZAth'], color='black',ls='dashed', label="Zenith Angle Th.")
+            lines.append(p3b)
+        
+        host1.set_xlabel("", fontsize=15)
+        host1.set_ylabel("Load [kg]", fontsize=15)
+        host1.set_title(figname, fontsize=15)
+        par1.set_ylabel("Azimuth [deg]", fontsize=15)
+        par2.set_ylabel("Zenith Angle [deg]", fontsize=15)
 
-        lines = [p13b,p23b,p12b,p22b,p32b,p42b]
-        host2.legend(lines, [l.get_label() for l in lines],fontsize=13,title=addtext)
-    
-    addhtmlfile(fichierhtml,figname)
+        host1.yaxis.label.set_color(p1.get_color())
+        par1.yaxis.label.set_color(p2.get_color())
+        par2.yaxis.label.set_color(p3.get_color())
 
-    plt.savefig(figname, bbox_inches='tight')
-    #plt.show()
-    plt.close()
+        tkw = dict(size=4, width=1.5)
+        host1.tick_params(axis='y', colors=p1.get_color(), **tkw)
+        par1.tick_params(axis='y', colors=p2.get_color(), **tkw)
+        par2.tick_params(axis='y', colors=p3.get_color(), **tkw)
+        host1.tick_params(axis='x', **tkw)
+            
+        host1.set_xlim(datetime.fromtimestamp(tmin, tz=pytz.utc),datetime.fromtimestamp(tmax, tz=pytz.utc))
+        host1.legend(lines, [l.get_label() for l in lines],fontsize=13)
+        
+        if cmd_status ==0:
+            host1.text(0., 1., 'ACTION FINISHED',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='green', fontsize=15)
+        if cmd_status ==2:
+            host1.text(0., 1., 'ACTION STOPPED BY USER',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='orange', fontsize=15)
+        if cmd_status ==1:
+            host1.text(0., 1., 'ACTION STOPPED BY ERROR',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='red', fontsize=15)
+        if cmd_status ==3:
+            host1.text(0., 1., 'CUSTOM PERIOD',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='blue', fontsize=15)
+        
+        host2 = fig.add_subplot(spec[1])
+        plt.gca().xaxis.set_major_formatter(formatter)
+        
+        if dftorque is not None:        
+            p13b, =host2.plot(dftorque['T'],dftorque['El1_mean'], color='chocolate',label="El S")
+            p23b, =host2.plot(dftorque['T'],dftorque['El2_mean'], color='red',label="El N")
+            p12b, =host2.plot(dftorque['T'],dftorque['Az1_mean'], color='lime',label="Az SE")
+            p22b, =host2.plot(dftorque['T'],dftorque['Az2_mean'], color='forestgreen',label="Az NE")
+            p32b, =host2.plot(dftorque['T'],dftorque['Az3_mean'], color='cyan',label="Az NW")
+            p42b, =host2.plot(dftorque['T'],dftorque['Az4_mean'], color='dodgerblue',label="Az SW")
+            host2.set_xlabel('Time', fontsize=15)
+            host2.set_ylabel('Torque [N.m]', fontsize=15)
+            host2.set_xlim(datetime.fromtimestamp(tmin, tz=pytz.utc),datetime.fromtimestamp(tmax, tz=pytz.utc))
+
+            lines = [p13b,p23b,p12b,p22b,p32b,p42b]
+            host2.legend(lines, [l.get_label() for l in lines],fontsize=13,title=addtext)
+        
+        #addhtmlfile(fichierhtml,figname)
+
+        plt.savefig(figname, bbox_inches='tight')
+        #plt.show()
+        plt.close()
 
     
 def logtolin(x):
@@ -485,125 +542,127 @@ def lintolog(x):
 #Used in GenerateFig 
 def FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack):  
     print("FigRADec %s %s"%(ra,dec))
-
-    dfpos['AzSky'] = dfpos['Az']+dfbm['AzC']
-    dfpos['ZASky'] = dfpos['ZA']+dfbm['ZAC']
-    dfpos['AltSky'] = 90.- dfpos['ZASky']
-
-    #print(dftrack)
-    #print(dfbm)
-    
-    tracksky = None
-    if dftrack is not None:
-        tracksky = pd.merge(dftrack, dfbm, on="T",how='inner')
-        tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
-        tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']
-        tracksky['AltSky'] = 90.- tracksky['ZASky']
-    #print(tracksky)
-
-    lst=EarthLocation.from_geodetic(-17.8915 * u.deg, 28.7615 * u.deg, 2202* u.m)
-    #print(dfpos)
-    direc_lst = AltAz(location=lst, obstime=dfpos['T'],az=dfpos['AzSky'] * u.deg, alt=dfpos['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
-    sky_lst = SkyCoord(direc_lst.transform_to(ICRS()))
-    target = SkyCoord(ra=ra*u.deg,dec=dec*u.deg, frame='icrs')
-    distsky = target.separation(sky_lst)
-
-    if tracksky is not None:
-        direc_lst_track = AltAz(location=lst, obstime=tracksky['Tth'],az=tracksky['AzSky'] * u.deg, alt=tracksky['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
-        sky_lst_track = SkyCoord(direc_lst_track.transform_to(ICRS()))
-        target_track = SkyCoord(ra=ra*u.deg,dec=dec*u.deg, frame='icrs')
-        distsky_track = target.separation(sky_lst_track)
-
     figname3 = figname.replace(".png","_SkyCoord.png")
-    addhtmlfile(fichierhtml,figname3)
-    fig = plt.figure(figsize = (20, 12))
-    plt.gcf().subplots_adjust(left = 0.1, bottom = 0.15,right = 0.9, top = 0.85, wspace = 0.1, hspace = 0.1)
 
-    spec = gridspec.GridSpec(ncols=2, nrows=2)
+    if os.path.exists(figname3) == False:
+        dfpos['AzSky'] = dfpos['Az']+dfbm['AzC']
+        dfpos['ZASky'] = dfpos['ZA']+dfbm['ZAC']
+        dfpos['AltSky'] = 90.- dfpos['ZASky']
 
-    hostd = fig.add_subplot(spec[0])
-    if tracksky is not None:
-        plt.hist(sky_lst_track.ra.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-    plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
-    plt.axvline(x=ra, color='k', linestyle='--',label="Target")
-    hostd.set_xlabel("RA[deg]", fontsize=15)
-    #hostd.set_title(figname3, fontsize=15)    
-    hostd.legend()
+        #print(dftrack)
+        #print(dfbm)
+        
+        tracksky = None
+        if dftrack is not None:
+            tracksky = pd.merge(dftrack, dfbm, on="T",how='inner')
+            tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
+            tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']
+            tracksky['AltSky'] = 90.- tracksky['ZASky']
+        #print(tracksky)
 
-    hostd = fig.add_subplot(spec[1])
-    if tracksky is not None:
-        plt.hist(sky_lst_track.dec.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-    plt.hist(sky_lst.dec.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
-    plt.axvline(x=dec, color='k', linestyle='--',label="Target")
-    hostd.set_xlabel("Declination[deg]", fontsize=15)
-    #hostd.set_title(figname3, fontsize=15)    
-    hostd.legend()
+        lst=EarthLocation.from_geodetic(-17.8915 * u.deg, 28.7615 * u.deg, 2202* u.m)
+        #print(dfpos)
+        direc_lst = AltAz(location=lst, obstime=dfpos['T'],az=dfpos['AzSky'] * u.deg, alt=dfpos['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
+        sky_lst = SkyCoord(direc_lst.transform_to(ICRS()))
+        target = SkyCoord(ra=ra*u.deg,dec=dec*u.deg, frame='icrs')
+        distsky = target.separation(sky_lst)
 
-    hostd = fig.add_subplot(spec[2])
-    if tracksky is not None:
-        log10distsky_track = np.log10(distsky_track.deg*3600.)
-        plt.hist(log10distsky_track,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-    log10distsky = np.log10(distsky.deg*3600.)
-    plt.hist(log10distsky,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
-    for i in range(1,10):
-        plt.axvline(x=math.log10(i), color='red', linestyle='--')
-        plt.axvline(x=math.log10(i*10), color='blue', linestyle='--')
-        plt.axvline(x=math.log10(i*100), color='k', linestyle='--')
- 
-    hostd.set_xlabel("Log10 Angular Distance to Target[arcsec]", fontsize=15)
-    #hostd.set_title(figname3, fontsize=15)    
-    hostd.legend()
+        if tracksky is not None:
+            direc_lst_track = AltAz(location=lst, obstime=tracksky['Tth'],az=tracksky['AzSky'] * u.deg, alt=tracksky['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
+            sky_lst_track = SkyCoord(direc_lst_track.transform_to(ICRS()))
+            target_track = SkyCoord(ra=ra*u.deg,dec=dec*u.deg, frame='icrs')
+            distsky_track = target.separation(sky_lst_track)
 
-    hostd = fig.add_subplot(spec[3])
-    azmaxacc = np.log10(np.maximum(np.abs(dfacc.Azmax),np.abs(dfacc.Azmin)))
-    zdmaxacc = np.log10(np.maximum(np.abs(dfacc.Zdmax),np.abs(dfacc.Zdmin)))
+        #addhtmlfile(fichierhtml,figname3)
+        fig = plt.figure(figsize = (20, 12))
+        plt.gcf().subplots_adjust(left = 0.1, bottom = 0.15,right = 0.9, top = 0.85, wspace = 0.1, hspace = 0.1)
 
-    plt.hist(np.log10(np.abs(dfacc.Azmean)),bins=30,histtype='step',density=True,label='Azimuth 2s average', alpha=0.7,linewidth=3)
-    plt.hist(azmaxacc,bins=30,histtype='step', density=True,label='Azimuth 2s max', alpha=0.7,linewidth=3)
-    plt.hist(np.log10(np.abs(dfacc.Zdmean)),bins=30,histtype='step',density=True,label='Elevation 2s average', alpha=0.7,linewidth=3)
-    plt.hist(zdmaxacc,bins=30,histtype='step', density=True,label='Elevation 2s max', alpha=0.7,linewidth=3)
-    plt.axvline(x=math.log10(30.), color='k', linestyle='--',label="30\"")
-    plt.axvline(x=math.log10(4.e-02), color='red', linestyle='--',label="Encoder resolution")
-    hostd.set_xlabel('log$_{10}$(Accuracy [arcsec])',fontsize=15)
-    hostd.legend()
+        spec = gridspec.GridSpec(ncols=2, nrows=2)
 
-    plt.savefig(figname3, bbox_inches='tight')
-    #plt.show()
-    plt.close()
+        hostd = fig.add_subplot(spec[0])
+        if tracksky is not None:
+            plt.hist(sky_lst_track.ra.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
+        plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
+        plt.axvline(x=ra, color='k', linestyle='--',label="Target")
+        hostd.set_xlabel("RA[deg]", fontsize=15)
+        #hostd.set_title(figname3, fontsize=15)    
+        hostd.legend()
+
+        hostd = fig.add_subplot(spec[1])
+        if tracksky is not None:
+            plt.hist(sky_lst_track.dec.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
+        plt.hist(sky_lst.dec.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
+        plt.axvline(x=dec, color='k', linestyle='--',label="Target")
+        hostd.set_xlabel("Declination[deg]", fontsize=15)
+        #hostd.set_title(figname3, fontsize=15)    
+        hostd.legend()
+
+        hostd = fig.add_subplot(spec[2])
+        if tracksky is not None:
+            log10distsky_track = np.log10(distsky_track.deg*3600.)
+            plt.hist(log10distsky_track,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
+        log10distsky = np.log10(distsky.deg*3600.)
+        plt.hist(log10distsky,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
+        for i in range(1,10):
+            plt.axvline(x=math.log10(i), color='red', linestyle='--')
+            plt.axvline(x=math.log10(i*10), color='blue', linestyle='--')
+            plt.axvline(x=math.log10(i*100), color='k', linestyle='--')
+    
+        hostd.set_xlabel("Log10 Angular Distance to Target[arcsec]", fontsize=15)
+        #hostd.set_title(figname3, fontsize=15)    
+        hostd.legend()
+
+        hostd = fig.add_subplot(spec[3])
+        azmaxacc = np.log10(np.maximum(np.abs(dfacc.Azmax),np.abs(dfacc.Azmin)))
+        zdmaxacc = np.log10(np.maximum(np.abs(dfacc.Zdmax),np.abs(dfacc.Zdmin)))
+
+        plt.hist(np.log10(np.abs(dfacc.Azmean)),bins=30,histtype='step',density=True,label='Azimuth 2s average', alpha=0.7,linewidth=3)
+        plt.hist(azmaxacc,bins=30,histtype='step', density=True,label='Azimuth 2s max', alpha=0.7,linewidth=3)
+        plt.hist(np.log10(np.abs(dfacc.Zdmean)),bins=30,histtype='step',density=True,label='Elevation 2s average', alpha=0.7,linewidth=3)
+        plt.hist(zdmaxacc,bins=30,histtype='step', density=True,label='Elevation 2s max', alpha=0.7,linewidth=3)
+        plt.axvline(x=math.log10(30.), color='k', linestyle='--',label="30\"")
+        plt.axvline(x=math.log10(4.e-02), color='red', linestyle='--',label="Encoder resolution")
+        hostd.set_xlabel('log$_{10}$(Accuracy [arcsec])',fontsize=15)
+        hostd.legend()
+
+        plt.savefig(figname3, bbox_inches='tight')
+        #plt.show()
+        plt.close()
 
     
 #Used in GenerateFig
 def FigAccuracyTime(figname,addtext,fichierhtml,dfacc):
     print("FigAccuracyTime ")
     figname2 = figname.replace(".png","_Diff.png")
-    addhtmlfile(fichierhtml,figname2)
-    fig,hostd = plt.subplots(figsize = (25, 12))
-    plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0.1, hspace = 0.1)
+    if os.path.exists(figname2) == False:
+        #addhtmlfile(fichierhtml,figname2)
+        fig,hostd = plt.subplots(figsize = (25, 12))
+        plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0.1, hspace = 0.1)
 
-    #spec = gridspec.GridSpec(ncols=1, nrows=1,width_ratios=[4,1])
-    #hostd = fig.add_subplot(0)
+        #spec = gridspec.GridSpec(ncols=1, nrows=1,width_ratios=[4,1])
+        #hostd = fig.add_subplot(0)
 
-    formatter = mdates.DateFormatter("%H:%M:%S") ; 
-    formatter.set_tzinfo(pytz.utc); 
-    plt.gca().xaxis.set_major_formatter(formatter)
+        formatter = mdates.DateFormatter("%H:%M:%S") ; 
+        formatter.set_tzinfo(pytz.utc); 
+        plt.gca().xaxis.set_major_formatter(formatter)
 
-    pfill = plt.fill_between(dfacc['T'],-60.,60., color='palegreen',label="1' req.")
-    pfill2 = plt.fill_between(dfacc['T'],-14.,14., color='limegreen',label="14'' req.")
+        pfill = plt.fill_between(dfacc['T'],-60.,60., color='palegreen',label="1' req.")
+        pfill2 = plt.fill_between(dfacc['T'],-14.,14., color='limegreen',label="14'' req.")
 
-    p1d = hostd.fill_between(dfacc['T'],dfacc['Azmax'],dfacc['Azmin'],facecolor='blue',alpha=0.5,label='Azimuth')
-    p1bd = hostd.fill_between(dfacc['T'],dfacc['Zdmax'],dfacc['Zdmin'],facecolor='red',alpha=0.5,label='Zenith angle')
+        p1d = hostd.fill_between(dfacc['T'],dfacc['Azmax'],dfacc['Azmin'],facecolor='blue',alpha=0.5,label='Azimuth')
+        p1bd = hostd.fill_between(dfacc['T'],dfacc['Zdmax'],dfacc['Zdmin'],facecolor='red',alpha=0.5,label='Zenith angle')
 
-    hostd.set_ylabel("Pointing Error [arcsec]", fontsize=15)
+        hostd.set_ylabel("Pointing Error [arcsec]", fontsize=15)
 
-    lines = [p1d,p1bd]
+        lines = [p1d,p1bd]
 
-    hostd.axhline(y=0,xmin=0.05,xmax=0.95,linestyle='dotted')
-    lines = [p1d,p1bd,pfill,pfill2]
-    hostd.legend(lines, [l.get_label() for l in lines],fontsize=13,title=addtext)
-    hostd.set_title(figname2, fontsize=15)    
-    plt.legend()
-    plt.savefig(figname2, bbox_inches='tight')
-    plt.close()
+        hostd.axhline(y=0,xmin=0.05,xmax=0.95,linestyle='dotted')
+        lines = [p1d,p1bd,pfill,pfill2]
+        hostd.legend(lines, [l.get_label() for l in lines],fontsize=13,title=addtext)
+        hostd.set_title(figname2, fontsize=15)    
+        plt.legend()
+        plt.savefig(figname2, bbox_inches='tight')
+        plt.close()
 
 
 #Used in FigureTrack, FigRADec, FigAccuracyTime
@@ -754,12 +813,14 @@ def checkallactions(logsorted):
         
     #print("%s %s"%(action,actiondate))
 
-#Used in checkDateV2
+#Used in checkDateV2 Gets the regulation parameters for Elevation and Azimuth from the cmd
 def getRegulParameters(param,paramline,begtrack):
     paramout=""
     for i in range(len(param)-1,-1,-1):
         if param[i]<begtrack:
             for j in range(7,len(paramline[i].split(" "))):
+                #print(j)
+                #print(str(paramline[i].split(" ")))
                 paramout+=str(paramline[i].split(" ")[j])
                 paramout+=" "
             break
@@ -769,7 +830,7 @@ def getRegulParameters(param,paramline,begtrack):
 
          
 #Used in GetAllDate function
-def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,filename4,figname,fichierhtml,zoom=0,action="",lastone=0,azparam=None,azparamline=None,elparam=None,elparamline=None,ra=None,dec=None):
+def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,filename4,figname,type,zoom=0,action="",lastone=0,azparam=None,azparamline=None,elparam=None,elparamline=None,ra=None,dec=None):
     #print("beg   %s"%(beg))
     #print("end   %s"%(end))
     #print("error %s"%(error))
@@ -782,7 +843,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
     beg_ok=[]
     end_ok=[]
     cmd_status=[]
-
+    
 
 
 
@@ -834,20 +895,21 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
                 if track[j]<beg_ok[i] :
  #                   if (beg_ok[i]-track[j])< timedelta(minutes=6):
                     if (beg_ok[i]-track[j])< (6*60):
+                        #print(datetime.fromtimestamp(track[j]))
                         trackok[i] = track[j]
                         raok[i] = ra[j]
                         decok[i] = dec[j]
                 else :
                     continue
-
+    #Used un GenerateFig
     addtext=''     
     if azparamline is not None:
         addtext = "Az " + getRegulParameters(azparam,azparamline,beg_ok[-1])
     if elparamline is not None:
         addtext += "El " + getRegulParameters(elparam,elparamline,beg_ok[-1])
- 
     raok2 = None
     decok2 = None
+    #print(type)
 
     if lastone == 0:
         #for i in range(0,1):
@@ -857,15 +919,23 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             endname = datetime.fromtimestamp(end_ok[i], tz=pytz.utc)
             sbegname = begname.strftime("%Y%m%d_%Hh%Mm%Ss")
             sendname = endname.strftime("%Y%m%d_%Hh%Mm%Ss")
+            #print(sbegname)
+            #print(sendname)
             figname = "_%s_%s"%(sbegname,sendname) + ".png"
             figname = figpre + figname.replace(":","")
+            #print(figname)
             trackok2 = trackok[i]
             if ra is not None:
                 raok2 = raok[i]
                 decok2 = decok[i]
             #pst = pytz.timezone('UTC')
             #trackok2 = pst.localize(trackok2)
-            
+            #print(trackok2)
+            #print(raok2)
+            #print(decok2)
+            #print(datetime.fromtimestamp(beg_ok[i]))
+            #print(datetime.fromtimestamp(end_ok[i]))
+            #print(end_ok[i]-beg_ok[i])
             if figname.find("Track") != -1 and (end_ok[i]-beg_ok[i])<5 :
                 ii=0
                 #print("Too short")
@@ -878,8 +948,8 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
                 if zoom==1:
                     tmin = tmax-200
                     tmax = tmax
-                GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,
-                          cmd_status[i],trackok2,figname.replace(" ",""),fichierhtml,addtext,raok2,decok2)
+                #print(filename,filename2,filename3,filename4,tmin,tmax, cmd_status[i],trackok2,figname.replace(" ",""),fichierhtml,addtext,raok2,decok2,"\n")
+                GenerateFig(filename,filename2,filename3,filename4,tmin,tmax, cmd_status[i],trackok2,figname.replace(" ",""),type,addtext,raok2,decok2)
     else:
 
         #print("%s T=%s => Duration=%s Track Start %s"%(i,beg_ok[i],end_ok[i]-beg_ok[i],trackok[i]))
@@ -907,7 +977,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             if zoom==1:
                 tmin = tmax-200
                 tmax = tmax
-            GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status[-1],trackok2,figname.replace(" ",""),fichierhtml,addtext,raok2,decok2)
+            GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status[-1],trackok2,figname.replace(" ",""),type,addtext,raok2,decok2)
 
 #Starts the HTML structure of thte document setting the Title of the page #NOT USED ANYMORE
 def starthtmlfile(fichierhtml,dirname):
@@ -936,37 +1006,30 @@ def endhtmlfile(logsorted):
     action=""
     actiondate=0
     data = {}
+    commandPosition = None
     for i in range(0,len(logsorted)):
-        if logsorted[i][1].find("action error")!= -1 :
-            isinerror=1
-        if logsorted[i][1].find("StopDrive")!= -1 :
-            isstopped=1
-        if action.find("Park_Out")!= -1 and logsorted[i][1].find("Park_Out Done")!= -1 :
-            isfinished=1
-        if action.find("Park_In")!= -1 and logsorted[i][1].find("Park_In Done")!= -1 :
-            isfinished=1
-        if action.find("GoToPosition")!= -1 and logsorted[i][1].find("GoToTelescopePosition Done")!= -1 :
-            isfinished=1
-        if action.find("Start Tracking")!= -1 and logsorted[i][1].find("Start_Tracking Done received")!= -1 :
-            isfinished=1
-        if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1 or i==(len(logsorted)-1):
-            #print(action)
-            if action != "":
-                if isinerror==1:
-                    data["LogStatus"] = "Error"
-                else:
-                    if isstopped==1:
-                        data["LogStatus"] = "Stopped"
-                    else:
-                        if isfinished==1:
-                            data["LogStatus"] = "Finished"
-                        else:
-                            data["LogStatus"] = "Unknown"
-            isinerror=0
-            isstopped=0
-            isfinished=0
-            action=logsorted[i][1]
-            actiondate=logsorted[i][0]
+        #TODO - Fix the finish over the stop !!
+        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1:
+            if logsorted[i][1].find("action error")!= -1 and commandPosition != None:        
+                logs[commandPosition]["LogStatus"] = "Error"
+                commandPosition = None
+            if logsorted[i][1].find("StopDrive")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Stopped"
+                commandPosition = None
+            if logsorted[i][1].find("Park_Out Done")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+            if logsorted[i][1].find("Park_In Done")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+            if logsorted[i][1].find("GoToTelescopePosition Done")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+            if logsorted[i][1].find("Start_Tracking Done received")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Finished"
+                commandPosition = None
+        if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1:
+            commandPosition = i
         else:
             data["LogStatus"] = None
 
@@ -986,14 +1049,13 @@ def endhtmlfile(logsorted):
         logs.append(data)
         data = {}
     #print(logs)
-    #TODO Last value not sent - CHECK IT !!
-    req = requests.post("http://127.0.0.1:8000/storage/store", json=logs)
+    req = requests.post("http://127.0.0.1:8000/storage/storeLogs", json=logs)
     print(req.json()["Message"])
 
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     
-    dirname = "./DriveOutput/Log_" + filename
+    dirname = "./DriveMonitoringApp/DataStorage/static/img/Log_" + filename
     dirnamehtml = dirname
 
     generallog.clear()
@@ -1041,62 +1103,51 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
-    endhtmlfile(generallogsorted)
+    #endhtmlfile(generallogsorted)
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+    endhtmlfile(generallogsorted)
 
-    """ if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+    if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
     	if path.exists(dirname)==False :
              os.mkdir(dirname)
              
     	#print(dirname)
- 
-    	fichierhtml = open(dirnamehtml+".html", "w")
-    	starthtmlfile(fichierhtml,filename)
-    	if path.exists(dirname)==False : #Duplicated??
-    	    os.mkdir(dirname)
 
-
-    
     if len(trackbeg) != 0:
         if path.exists(dirname+"/Track")==False :
                 os.mkdir(dirname+"/Track")
-        fichierhtml.write("<section class='tracks'>\n")
-        fichierhtml.write("<h2>Track</h2>")
         print("====== Track =======")
-        #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",fichierhtml,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
-        fichierhtml.write("</section>\n")
+        selectedType = "1"
+        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
 
     if lastone ==0 :
         if len(parkoutbeg) != 0:
             if path.exists(dirname+"/Parkout")==False :
                     os.mkdir(dirname+"/Parkout")
-            fichierhtml.write("<section class='parkouts'>\n")
-            fichierhtml.write("<h2>Park Out</h2>")
             print("====== Parkout =======")
-            #checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",fichierhtml,0,"ParkOut")
-            fichierhtml.write("</section>\n")
+            selectedType = "2"
+            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
 
         if len(parkinbeg) != 0:
             if path.exists(dirname+"/Parkin")==False :
                     os.mkdir(dirname+"/Parkin")
-            fichierhtml.write("<section class='parkins'>\n")
-            fichierhtml.write("<h2>Park In</h2>")
             print("====== Parkin =======")
-            #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",fichierhtml,1,"ParkIn")
-            #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",fichierhtml,2,"ParkIn")
-            fichierhtml.write("</section>\n")
+            selectedType = "3"
+            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
+            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],2,"ParkIn")
 
         if len(gotobeg) != 0:
             if path.exists(dirname+"/GoToPos")==False :
                     os.mkdir(dirname+"/GoToPos")
-            fichierhtml.write("<section class='gotopos'>\n")
-            fichierhtml.write("<h2>GoToPos</h2>")
             print("====== GoToPos =======")
-            #checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",fichierhtml,0,"GoToPsition")
-            fichierhtml.write("</section>\n")
+            selectedType = "4"
+            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
     
-        if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
-            endhtmlfile(fichierhtml,generallogsorted) """
+        #if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+            #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
+            #print(generalData)
+            
+            #print(req.json()["Message"])
 
     
 #Function to generate filenames for all the logs. Used in plotstrangefeature.

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib import gridspec
 import pytz
+import pandas as pd
 
 database = MongoDb
 
@@ -126,6 +127,11 @@ def getFirstPlot(request):
         print(tmin, tmax)
         cmd_status = 0
         position = database.getPosition(database, tmin, tmax)
+        loadPin = database.getLoadPin(database, tmin, tmax)
+        track = database.getTrack(database, tmin, tmax)
+        torque = database.getTorque(database, tmin, tmax)
+        dfpos = pd.DataFrame.from_dict(position) #Time format is slightly different. Check if that is important 00:00:00+00:00 Original format
+        print(loadPin)
         """ fig = plt.figure(figsize = (20, 12))
         plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0, hspace = 0.1)
         

@@ -315,8 +315,99 @@ class MongoDb:
     def getPosition(self, tmin, tmax):
         #TODO - Find how to query in MongoDB to get the items
         result = {}
-        for data in self.dbname["Position"].find():
-            print(data)
-
+        result["T"] = {}
+        result["Az"] = {}
+        result["ZA"] = {}
+        index = 0
+        tmin = str(tmin).replace(".0", "")+"000"
+        tmax = str(tmax).replace(".0", "")+"000"
+        for data in self.dbname["Position"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+            result["T"][index] = datetime.fromtimestamp(int(str(data["T"])[:-3]))
+            result["Az"][index] = data["Az"]
+            result["ZA"][index] = data["ZA"]
+            index += 1
+        return result
+    def getLoadPin(self, tmin, tmax):
+        #TODO - Find how to query in MongoDB to get the items
+        result = {}
+        result["T"] = {}
+        result["LoadPin"] = {}
+        result["Load"] = {}
+        index = 0
+        tmin = str(tmin).replace(".0", "")+"000"
+        tmax = str(tmax).replace(".0", "")+"000"
+        for data in self.dbname["Load_Pin"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+            print(type(data["T"]))
+            result["T"][index] = datetime.fromtimestamp(data["T"])
+            result["LoadPin"][index] = data["LoadPin"]
+            result["Load"][index] = data["Load"]
+            index += 1
+        return result
+    def getTrack(self, tmin, tmax):
+        #TODO - Find how to query in MongoDB to get the items
+        result = {}
+        result["T"] = {}
+        result["Azth"] = {}
+        result["ZAth"] = {}
+        result["vsT0"] = {}
+        result["Tth"] = {}
+        index = 0
+        tmin = str(tmin).replace(".0", "")+"000"
+        tmax = str(tmax).replace(".0", "")+"000"
+        for data in self.dbname["Track"].find({'Tth': {'$gt': int(tmin), '$lt': int(tmax)}}):
+            result["T"][index] = data["T"]
+            result["Azth"][index] = data["Azth"]
+            result["ZAth"][index] = data["ZAth"]
+            result["vsT0"][index] = data["vsT0"]
+            result["Tth"][index] = data["Tth"]
+            index += 1
+        return result
+    def getTorque(self, tmin, tmax):
+        #TODO - Find how to query in MongoDB to get the items
+        result = {}
+        result["T"] = {}
+        result["Az1_mean"] = {}
+        result["Az1_min"] = {}
+        result["Az1_max"] = {}
+        result["Az2_mean"] = {}
+        result["Az2_min"] = {}
+        result["Az2_max"] = {}
+        result["Az3_mean"] = {}
+        result["Az3_min"] = {}
+        result["Az3_max"] = {}
+        result["Az4_mean"] = {}
+        result["Az4_min"] = {}
+        result["Az4_max"] = {}
+        result["El1_mean"] = {}
+        result["El1_min"] = {}
+        result["El1_max"] = {}
+        result["El2_mean"] = {}
+        result["El2_min"] = {}
+        result["El2_max"] = {}
+        index = 0
+        tmin = str(tmin).replace(".0", "")+"000"
+        tmax = str(tmax).replace(".0", "")+"000"
+        for data in self.dbname["Torque"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+            result["T"][index] = datetime.fromtimestamp(int(str(data["T"])[:-3]))
+            result["Az1_mean"][index] = data["Az1_mean"]
+            result["Az1_min"][index] = data["Az1_min"]
+            result["Az1_max"][index] = data["Az1_max"]
+            result["Az2_mean"][index] = data["Az2_mean"]
+            result["Az2_min"][index] = data["Az2_min"]
+            result["Az2_max"][index] = data["Az2_max"]
+            result["Az3_mean"][index] = data["Az3_mean"]
+            result["Az3_min"][index] = data["Az3_min"]
+            result["Az3_max"][index] = data["Az3_max"]
+            result["Az4_mean"][index] = data["Az4_mean"]
+            result["Az4_min"][index] = data["Az4_min"]
+            result["Az4_max"][index] = data["Az4_max"]
+            result["El1_mean"][index] = data["El1_mean"]
+            result["El1_min"][index] = data["El1_min"]
+            result["El1_max"][index] = data["El1_max"]
+            result["El2_mean"][index] = data["El2_mean"]
+            result["El2_min"][index] = data["El2_min"]
+            result["El2_max"][index] = data["El2_max"]
+            index += 1
+        return result
 
     

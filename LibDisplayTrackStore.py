@@ -423,7 +423,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
         dataLine["track"].append(dftrack.to_json())
     if dftorque is not None:
         dataLine["torque"].append(dftorque.to_json())
-    print(dataLine["position"])
+    print(dfpos)
     data.hola
     FigureTrack(tmin,tmax,cmd_status,figname,addtext,None,dfpos,dfloadpin,dftrack,dftorque)
     if dfacc is not None:

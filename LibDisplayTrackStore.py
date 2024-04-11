@@ -28,6 +28,7 @@ import numpy as np
 
 import requests
 
+
 shifttemps=0
 
 #Same values??
@@ -422,6 +423,8 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
         dataLine["track"].append(dftrack.to_json())
     if dftorque is not None:
         dataLine["torque"].append(dftorque.to_json())
+    print(dataLine["position"])
+    data.hola
     FigureTrack(tmin,tmax,cmd_status,figname,addtext,None,dfpos,dfloadpin,dftrack,dftorque)
     if dfacc is not None:
         dataLine["accuracy"].append(dfacc.to_json())
@@ -528,9 +531,9 @@ def FigureTrack(tmin,tmax,cmd_status,figname,addtext,fichierhtml,dfpos,dfloadpin
         
         #addhtmlfile(fichierhtml,figname)
 
-        plt.savefig(figname, bbox_inches='tight')
-        #plt.show()
-        plt.close()
+        #plt.savefig(figname, bbox_inches='tight')
+        plt.show()
+        #plt.close()
 
     
 def logtolin(x):
@@ -1099,7 +1102,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     generallogsorted =sorted(generallog, key=itemgetter(0)) #Orders generallog by date as position 0 contains begdate value
     #print("All-Date")
     #print(generallogsorted)
-        
+    print("START TIME")
+    print(datetime.now().strftime("%H:%M:%S"))
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
     #endhtmlfile(generallogsorted)
@@ -1148,6 +1152,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             
             #print(req.json()["Message"])
 
+    print("END TIME")
+    print(datetime.now().strftime("%H:%M:%S"))
     
 #Function to generate filenames for all the logs. Used in plotstrangefeature.
 def plottrack(year,month,day):

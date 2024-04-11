@@ -42,6 +42,7 @@ let data = null;
 let filters = null;
 let summaryData = null
 let selectedFilters = {}
+fetch("http://127.0.0.1:8000/storage/getPlot")
 
 const fetchLatestData = async() => {
     let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")

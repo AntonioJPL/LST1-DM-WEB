@@ -434,7 +434,6 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     data = []
     data.append(dataLine)  
     req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
-    data.hola
 
         
     

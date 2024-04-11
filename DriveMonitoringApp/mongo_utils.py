@@ -67,7 +67,6 @@ class MongoDb:
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
         data = list(self.collection_data.find().sort({"Stime": -1}).sort({"Sdate": +1}))
         types = list(self.dbname["Types"].find())
-        print(types)
         for element in data:
             element["_id"] = str(element["_id"])
             if element["type"] is not None:
@@ -129,150 +128,155 @@ class MongoDb:
                 return False
     def storePosition(self, data):
         newData = []
-        firstIndex = list(data["T"].keys())[0]
-        for i in range(int(firstIndex), int(firstIndex)+len(data["T"])):
-            rowData = {}
-            rowData["T"] = data["T"][str(i)]
-            rowData["Az"] = data["Az"][str(i)]
-            rowData["ZA"] = data["ZA"][str(i)]
-            if self.dbname["Position"].find_one(rowData) == None:
-                newData.append(rowData)
-        if len(newData)>1:
-            self.dbname["Position"].insert_many(newData)
-            return True
-        else:
-            if len(newData) == 1:
-                self.dbname["Position"].insert_one(newData)
+        keys = list(data["T"].keys())
+        if len(keys) > 0:
+            for i in keys:
+                rowData = {}
+                rowData["T"] = data["T"][i]
+                rowData["Az"] = data["Az"][i]
+                rowData["ZA"] = data["ZA"][i]
+                if self.dbname["Position"].find_one(rowData) == None:
+                    newData.append(rowData)
+            if len(newData)>1:
+                self.dbname["Position"].insert_many(newData)
                 return True
             else:
-                return False
+                if len(newData) == 1:
+                    self.dbname["Position"].insert_one(newData[0])
+                    return True
+                else:
+                    return False
             
     def storeLoadPin(self, data):
         newData = []
-        firstIndex = list(data["T"].keys())[0]
-        for i in range(int(firstIndex), int(firstIndex)+len(data["T"])):
-            rowData = {}
-            rowData["T"] = data["T"][str(i)]
-            rowData["LoadPin"] = data["LoadPin"][str(i)]
-            if self.dbname["Load_Pin"].find_one(rowData) == None:
-                newData.append(rowData)
-        if len(newData)>1:
-            self.dbname["Load_Pin"].insert_many(newData)
-            return True
-        else:
-            if len(newData) == 1:
-                self.dbname["Load_Pin"].insert_one(newData)
+        keys = list(data["T"].keys())
+        if len(keys) > 0:
+            for i in keys:
+                rowData = {}
+                rowData["T"] = data["T"][i]
+                rowData["LoadPin"] = data["LoadPin"][i]
+                rowData["Load"] = data["Load"][i]
+                if self.dbname["Load_Pin"].find_one(rowData) == None:
+                    newData.append(rowData)
+            if len(newData)>1:
+                self.dbname["Load_Pin"].insert_many(newData)
                 return True
             else:
-                return False
+                if len(newData) == 1:
+                    self.dbname["Load_Pin"].insert_one(newData[0])
+                    return True
+                else:
+                    return False
     
     def storeTrack(self, data):
         newData = []
-        firstIndex = list(data["T"].keys())[0]
-        for i in range(int(firstIndex), int(firstIndex)+len(data["T"])):
-            rowData = {}
-            rowData["T"] = data["T"][str(i)]
-            rowData["Azth"] = data["Azth"][str(i)]
-            rowData["ZAth"] = data["ZAth"][str(i)]
-            rowData["vsT0"] = data["vsT0"][str(i)]
-            if self.dbname["Track"].find_one({"T": rowData["T"], "Azth": rowData["Azth"], "ZAth": rowData["ZAth"], "vsT0": rowData["vsT0"]}) == None:
-                newData.append(rowData)
-        if len(newData)>1:
-            self.dbname["Track"].insert_many(newData)
-            return True
-        else:
-            if len(newData) == 1:
-                self.dbname["Track"].insert_one(newData)
+        keys = list(data["T"].keys())
+        if len(keys) > 0:
+            for i in keys:
+                rowData = {}
+                rowData["T"] = data["T"][i]
+                rowData["Azth"] = data["Azth"][i]
+                rowData["ZAth"] = data["ZAth"][i]
+                rowData["vsT0"] = data["vsT0"][i]
+                rowData["Tth"] = data["Tth"][i]
+                if self.dbname["Track"].find_one({"T": rowData["T"], "Azth": rowData["Azth"], "ZAth": rowData["ZAth"], "vsT0": rowData["vsT0"]}) == None:
+                    newData.append(rowData)
+            if len(newData)>1:
+                self.dbname["Track"].insert_many(newData)
                 return True
             else:
-                return False
+                if len(newData) == 1:
+                    self.dbname["Track"].insert_one(newData[0])
+                    return True
+                else:
+                    return False
 
     def storeTorque(self, data):
         newData = []
-        firstIndex = list(data["T"].keys())[0]
-        for i in range(int(firstIndex), int(firstIndex)+len(data["T"])):
-            rowData = {}
-            rowData["T"] = data["T"][str(i)]
-            rowData["Az1_mean"] = data["Az1_mean"][str(i)]
-            rowData["Az1_min"] = data["Az1_min"][str(i)]
-            rowData["Az1_max"] = data["Az1_max"][str(i)]
-            rowData["Az2_mean"] = data["Az2_mean"][str(i)]
-            rowData["Az2_min"] = data["Az2_min"][str(i)]
-            rowData["Az2_max"] = data["Az2_max"][str(i)]
-            rowData["Az3_mean"] = data["Az3_mean"][str(i)]
-            rowData["Az3_min"] = data["Az3_min"][str(i)]
-            rowData["Az3_max"] = data["Az3_max"][str(i)]
-            rowData["Az4_mean"] = data["Az4_mean"][str(i)]
-            rowData["Az4_min"] = data["Az4_min"][str(i)]
-            rowData["Az4_max"] = data["Az4_max"][str(i)]
-            rowData["El1_mean"] = data["El1_mean"][str(i)]
-            rowData["El1_min"] = data["El1_min"][str(i)]
-            rowData["El1_max"] = data["El1_max"][str(i)]
-            rowData["El2_mean"] = data["El2_mean"][str(i)]
-            rowData["El2_min"] = data["El2_min"][str(i)]
-            rowData["El2_max"] = data["El2_max"][str(i)]
+        keys = list(data["T"].keys())
+        if len(keys) > 0:
+            for i in keys:
+                rowData = {}
+                rowData["T"] = data["T"][i]
+                rowData["Az1_mean"] = data["Az1_mean"][i]
+                rowData["Az1_min"] = data["Az1_min"][i]
+                rowData["Az1_max"] = data["Az1_max"][i]
+                rowData["Az2_mean"] = data["Az2_mean"][i]
+                rowData["Az2_min"] = data["Az2_min"][i]
+                rowData["Az2_max"] = data["Az2_max"][i]
+                rowData["Az3_mean"] = data["Az3_mean"][i]
+                rowData["Az3_min"] = data["Az3_min"][i]
+                rowData["Az3_max"] = data["Az3_max"][i]
+                rowData["Az4_mean"] = data["Az4_mean"][i]
+                rowData["Az4_min"] = data["Az4_min"][i]
+                rowData["Az4_max"] = data["Az4_max"][i]
+                rowData["El1_mean"] = data["El1_mean"][i]
+                rowData["El1_min"] = data["El1_min"][i]
+                rowData["El1_max"] = data["El1_max"][i]
+                rowData["El2_mean"] = data["El2_mean"][i]
+                rowData["El2_min"] = data["El2_min"][i]
+                rowData["El2_max"] = data["El2_max"][i]
 
-            if self.dbname["Torque"].find_one(rowData) == None:
-                newData.append(rowData)
-        if len(newData)>1:
-            self.dbname["Torque"].insert_many(newData)
-            return True
-        else:
-            if len(newData) == 1:
-                self.dbname["Torque"].insert_one(newData)
+                if self.dbname["Torque"].find_one(rowData) == None:
+                    newData.append(rowData)
+            if len(newData)>1:
+                self.dbname["Torque"].insert_many(newData)
                 return True
             else:
-                return False
+                if len(newData) == 1:
+                    self.dbname["Torque"].insert_one(newData[0])
+                    return True
+                else:
+                    return False
 
     def storeAccuracy(self, data):
         newData = []
         keys = list(data["T"].keys())
-        firstIndex = keys[0]
-        lastIndex = keys[len(keys)-1]
-        for i in range(int(firstIndex), int(lastIndex)):
-            if str(i) in keys:
+        if len(keys) > 0:
+            for i in keys:
                 rowData = {}
-                rowData["T"] = data["T"][str(i)]
-                rowData["Azmean"] = data["Azmean"][str(i)]
-                rowData["Azmin"] = data["Azmin"][str(i)]
-                rowData["Azmax"] = data["Azmax"][str(i)]
-                rowData["Zdmean"] = data["Zdmean"][str(i)]
-                rowData["Zdmin"] = data["Zdmin"][str(i)]
-                rowData["Zdmax"] = data["Zdmax"][str(i)]
+                rowData["T"] = data["T"][i]
+                rowData["Azmean"] = data["Azmean"][i]
+                rowData["Azmin"] = data["Azmin"][i]
+                rowData["Azmax"] = data["Azmax"][i]
+                rowData["Zdmean"] = data["Zdmean"][i]
+                rowData["Zdmin"] = data["Zdmin"][i]
+                rowData["Zdmax"] = data["Zdmax"][i]
 
                 if self.dbname["Accuracy"].find_one(rowData) == None:
                     newData.append(rowData)
 
-        if len(newData)>1:
-            self.dbname["Accuracy"].insert_many(newData)
-            return True
-        else:
-            if len(newData) == 1:
-                self.dbname["Accuracy"].insert_one(newData[0])
+            if len(newData)>1:
+                self.dbname["Accuracy"].insert_many(newData)
                 return True
             else:
-                return False
+                if len(newData) == 1:
+                    self.dbname["Accuracy"].insert_one(newData[0])
+                    return True
+                else:
+                    return False
             
     def storeBendModel(self, data):
         newData = []
-        firstIndex = list(data["T"].keys())[0]
-        for i in range(int(firstIndex), int(firstIndex)+len(data["T"])):
-            rowData = {}
-            rowData["T"] = data["T"][str(i)]
-            rowData["AzC"] = data["AzC"][str(i)]
-            rowData["ZAC"] = data["ZAC"][str(i)]
+        keys = list(data["T"].keys())
+        if len(keys) > 0:
+            for i in keys:
+                rowData = {}
+                rowData["T"] = data["T"][i]
+                rowData["AzC"] = data["AzC"][i]
+                rowData["ZAC"] = data["ZAC"][i]
 
-            if self.dbname["Bend_Model"].find_one(rowData) == None:
-                newData.append(rowData)
-        if len(newData)>1:
-            self.dbname["Bend_Model"].insert_many(newData)
-            return True
-        else:
-            if len(newData) == 1:
-                self.dbname["Bend_Model"].insert_one(newData)
+                if self.dbname["Bend_Model"].find_one(rowData) == None:
+                    newData.append(rowData)
+            if len(newData)>1:
+                self.dbname["Bend_Model"].insert_many(newData)
                 return True
             else:
-                return False
+                if len(newData) == 1:
+                    self.dbname["Bend_Model"].insert_one(newData[0])
+                    return True
+                else:
+                    return False
             
     def checkDuplicatedLogs(self, Time, Command, Date):
         commandId = self.dbname["Commands"].find_one({"name": Command}, {"name": 0})
@@ -306,3 +310,13 @@ class MongoDb:
         return response
     def isData(self):
         return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
+    def getFirstData(self):
+        return self.dbname["Data"].find_one()
+    def getPosition(self, tmin, tmax):
+        #TODO - Find how to query in MongoDB to get the items
+        result = {}
+        for data in self.dbname["Position"].find():
+            print(data)
+
+
+    

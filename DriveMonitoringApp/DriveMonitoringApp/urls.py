@@ -28,6 +28,7 @@ urlpatterns = [
     path('storage/storeData', Sv.storeData),
     path('storage/getLogs', Sv.getLogs),
     path('storage/getData', Sv.getData),
+    path('storage/getPlot', Sv.getFirstPlot),
     path('storage/update', Sv.update),
     path('storage/delete', Sv.delete),
     path('storage/start', Sv.start),

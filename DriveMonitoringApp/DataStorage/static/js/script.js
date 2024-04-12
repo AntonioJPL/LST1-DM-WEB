@@ -42,12 +42,13 @@ let data = null;
 let filters = null;
 let summaryData = null
 let selectedFilters = {}
+let generalData = {}
 fetch("http://127.0.0.1:8000/storage/getPlot")
 
 const fetchLatestData = async() => {
     let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
     .then(response => response.json())
-    let generalData = await fetch("http://127.0.0.1:8000/storage/getData")
+    generalData = await fetch("http://127.0.0.1:8000/storage/getData")
     .then(response => response.json())
     showAllData(generalData.data)
     data = serverRes.data
@@ -365,6 +366,17 @@ const loadFilters = ()=>{
                 let evento = new Event("click")
                 divLogs.dispatchEvent(evento)
             }
+            let filteredData =  []
+            if(selectedFilters["operation"] != "All"){
+                filteredData = generalData.data.filter((element) => selectedFilters["operation"] == element.type)
+            }
+            if(selectedFilters["date"] != "All"){
+                filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
+            }
+            if(selectedFilters["time"] != "All"){
+                filteredData = generalData.data.filter((element) => selectedFilters["time"] == element.Stime)
+            }
+            showAllData(filteredData)
         }else{
             selectedFilters = {}
             divContent.classList.remove("overflow-y-scroll")
@@ -372,6 +384,7 @@ const loadFilters = ()=>{
             if(divLogs.classList.contains("bg-[#325D88]")){
                 printAllLogs()
             }
+            showAllData(generalData.data)
         }
     })
     let clearButton = document.createElement("button")
@@ -389,6 +402,7 @@ const loadFilters = ()=>{
         if(divLogs.classList.contains("bg-[#325D88]")){
            printAllLogs()
         }
+        showAllData(generalData.data)
     })
 
     buttons.appendChild(filterButton)
@@ -406,11 +420,17 @@ const loadFilters = ()=>{
 const showAllData = (data)=>{
     data.sort(sortByTime)
     let graphicContents = document.querySelector("div.graphicSection")
+    console.log(graphicContents == null)
     if( graphicContents == null){
+        console.log("Entro en el true")
         graphicContents = document.createElement("div")
         graphicContents.classList.add("w-[66%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
     }else{
-        contenSection.removeChild(graphicContents)
+        console.log("Entro en el false")
+        console.log(contenSection.removeChild(graphicContents))
+        graphicContents = document.createElement("div")
+        graphicContents.classList.add("w-[66%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
+        console.log(data)
     }
     data.forEach(element => {
         let card = document.createElement("div")

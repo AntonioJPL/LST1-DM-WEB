@@ -8,6 +8,7 @@ from bson import ObjectId
 import os
 import glob
 from datetime import datetime
+import pytz
 
 class MongoDb:
 
@@ -17,11 +18,40 @@ class MongoDb:
     collection_data = dbname["Data"]
     img_rute = "/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/"
    
-
+    #Function that initialize the general data
     def __init__(self):
         data = {}
-        
-
+        self.dbname["CommandStatus"].insert_many([
+            {"name": "command sent"},
+            {"name": "in progress"},
+            {"name": "Done received"},
+            {"name": "action error"}
+        ])
+        self.dbname["LogStatus"].insert_many([
+            {"name": "Finished"},
+            {"name": "Stopped"},
+            {"name": "Error"},
+            {"name": "Unknown"}
+        ])
+        self.dbname["Types"].insert_many([
+            {"name": "Track"},
+            {"name": "Park-in"},
+            {"name": "Park-out"},
+            {"name": "GoToPos"}
+        ])
+        self.dbname["Commands"].insert_many([
+            {"name": "StopDrive"},
+            {"name": "Drive Regulation Parameters Azimuth"},
+            {"name": "Drive Regulation Parameters Elevation"},
+            {"name": "[Drive] Track start"},
+            {"name": "Start Tracking"},
+            {"name": "Park_Out"},
+            {"name": "Park_In"},
+            {"name": "GoToTelescopePosition"},
+            {"name": "Start_Tracking"},
+            {"name": "GoToPosition"}
+        ])
+    
     def getData(self):
         #source ~/.bash_profile needed
         PORT = os.getenv("DB_HOST")
@@ -322,7 +352,7 @@ class MongoDb:
         tmin = str(tmin).replace(".0", "")+"000"
         tmax = str(tmax).replace(".0", "")+"000"
         for data in self.dbname["Position"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
-            result["T"][index] = datetime.fromtimestamp(int(str(data["T"])[:-3]))
+            result["T"][index] = datetime.fromtimestamp(int(str(data["T"])[:-3]), tz=pytz.utc)
             result["Az"][index] = data["Az"]
             result["ZA"][index] = data["ZA"]
             index += 1
@@ -337,8 +367,9 @@ class MongoDb:
         tmin = str(tmin).replace(".0", "")+"000"
         tmax = str(tmax).replace(".0", "")+"000"
         for data in self.dbname["Load_Pin"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
-            print(type(data["T"]))
-            result["T"][index] = datetime.fromtimestamp(data["T"])
+            dataF = float(data["T"])
+            dataF = dataF/1000
+            result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
             result["LoadPin"][index] = data["LoadPin"]
             result["Load"][index] = data["Load"]
             index += 1
@@ -359,7 +390,9 @@ class MongoDb:
             result["Azth"][index] = data["Azth"]
             result["ZAth"][index] = data["ZAth"]
             result["vsT0"][index] = data["vsT0"]
-            result["Tth"][index] = data["Tth"]
+            dataF = float(data["Tth"])
+            dataF = dataF/1000
+            result["Tth"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
             index += 1
         return result
     def getTorque(self, tmin, tmax):
@@ -388,7 +421,9 @@ class MongoDb:
         tmin = str(tmin).replace(".0", "")+"000"
         tmax = str(tmax).replace(".0", "")+"000"
         for data in self.dbname["Torque"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
-            result["T"][index] = datetime.fromtimestamp(int(str(data["T"])[:-3]))
+            dataF = float(data["T"])
+            dataF = dataF/1000
+            result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
             result["Az1_mean"][index] = data["Az1_mean"]
             result["Az1_min"][index] = data["Az1_min"]
             result["Az1_max"][index] = data["Az1_max"]
@@ -409,5 +444,49 @@ class MongoDb:
             result["El2_max"][index] = data["El2_max"]
             index += 1
         return result
-
+    def getAccuracy(self, tmin, tmax):
+        #TODO - Find how to query in MongoDB to get the items
+        result = {}
+        result["T"] = {}
+        result["Azmean"] = {}
+        result["Azmin"] = {}
+        result["Azmax"] = {}
+        result["Zdmean"] = {}
+        result["Zdmin"] = {}
+        result["Zdmax"] = {}
+        index = 0
+        tmin = str(tmin).replace(".0", "")+"000"
+        tmax = str(tmax).replace(".0", "")+"000"
+        for data in self.dbname["Accuracy"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+            dataF = float(data["T"])
+            dataF = dataF/1000
+            result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
+            result["Azmean"][index] = data["Azmean"]
+            result["Azmin"][index] = data["Azmin"]
+            result["Azmax"][index] = data["Azmax"]
+            result["Zdmean"][index] = data["Zdmean"]
+            result["Zdmin"][index] = data["Zdmin"]
+            result["Zdmax"][index] = data["Zdmax"]
+            index += 1
+        return result
+    def getBM(self, tmin, tmax):
+        result = {}
+        result["T"] = {}
+        result["AzC"] = {}
+        result["ZAC"] = {}
+        index = 0
+        #tmin = str(tmin).replace(".0", "")+"000"
+        #tmax = str(tmax).replace(".0", "")+"000"
+        #print(tmin)
+        #print(list(self.dbname["Bend_Model"].find({'T': {'$gt': tmin, '$lt': tmax}})))
+        for data in self.dbname["Bend_Model"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+            #dataF = float(data["T"])
+            #dataF = dataF/1000
+            result["T"][index] = data["T"]
+            result["AzC"][index] = data["AzC"]
+            result["ZAC"][index] = data["ZAC"]
+            index += 1
+        return result
+    def getOperationTime(self):
+        return list(self.dbname["Operations"].find())
     

@@ -423,17 +423,15 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
         dataLine["track"].append(dftrack.to_json())
     if dftorque is not None:
         dataLine["torque"].append(dftorque.to_json())
-    print(dfpos)
-    data.hola
-    FigureTrack(tmin,tmax,cmd_status,figname,addtext,None,dfpos,dfloadpin,dftrack,dftorque)
+    #FigureTrack(tmin,tmax,cmd_status,figname,addtext,None,dfpos,dfloadpin,dftrack,dftorque)
     if dfacc is not None:
         dataLine["accuracy"].append(dfacc.to_json())
-        FigAccuracyTime(figname,addtext,None,dfacc)
+        #FigAccuracyTime(figname,addtext,None,dfacc)
 #        FigAccuracyHist(figname,None,dfacc)
-    #I'm Having Issues with the FigRADec function as it throws an astronomy specific error When creating the AltAz object on line: 502 -- THIS 2 LINES BELOW WERE UNCOMMENTED!!
     if dfbm is not None:
         dataLine["bendModel"].append(dfbm.to_json())
-        FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
+        #FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
+    print(dfacc)
     data = []
     data.append(dataLine)  
     req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)

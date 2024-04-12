@@ -17,10 +17,13 @@ from matplotlib import gridspec
 import pytz
 import pandas as pd
 
+from . import figuresFunctions
+
 database = MongoDb
 
 def index(request):
     return database.getData(database)
+#Function thata stores the Logs into MongoDB
 @csrf_exempt
 def storeLogs(request):
     if(request.method == 'POST'):
@@ -40,6 +43,7 @@ def storeLogs(request):
             return JsonResponse({"Message": "The data has been stored successfully."})
         else:
             return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
+#Function that stores the general data into MongoDB
 @csrf_exempt
 def storeData(request):
     #TODO - Needs optimization as it takes a LOT of time to store all the data
@@ -86,13 +90,16 @@ def storeData(request):
             return JsonResponse({"Message": "The data has been stored successfully."})
         else:
             return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
-
+#TEST
 def update(request):
     return database.updateData(database)
+#TEST
 def delete(request):
     return database.deleteData(database)
+#TEST
 def start(request):
     return database.__init__(database)
+#Function that returns the data and render the home view or throws an Json response with an error message
 def home(request):
     if database.isData(database) == True:
         latestTime = database.getLatestDate(database)
@@ -100,7 +107,8 @@ def home(request):
         return render(request, "storage/index.html", {"data" : data})
     else:
         return JsonResponse({"Message": "There is no data to show"})
-    
+
+#Function that returns the Logs from the database in case there are.
 def getLogs(request):
     if request.method == "GET":
         if database.isData(database) == True:
@@ -108,6 +116,7 @@ def getLogs(request):
             return JsonResponse(data)
         else:
             return JsonResponse({"Message": "There is no data to show"})
+#Function that returns the data from the database in case there is.
 def getData(request):
     if request.method == "GET":
         if database.isData(database) == True:
@@ -115,6 +124,8 @@ def getData(request):
             return JsonResponse(data)
         else:
             return JsonResponse({"Message": "There is no data to show"})
+        
+#Function that generates the plots for the first operation. TESTING FUNCTION
 def getFirstPlot(request):
     print(request.method)
     if request.method == "GET":
@@ -125,105 +136,30 @@ def getFirstPlot(request):
         stringTime = firstElement["Edate"]+" "+firstElement["Etime"]
         tmax = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
         print(tmin, tmax)
+        """  operation = database.getOperationTime(database)
+        print("Esta es la operacion")
+        print(operation)
+        tmin = operation[0]["Tmin"]
+        tmax = operation[0]["Tmax"] """
         cmd_status = 0
         position = database.getPosition(database, tmin, tmax)
         loadPin = database.getLoadPin(database, tmin, tmax)
         track = database.getTrack(database, tmin, tmax)
         torque = database.getTorque(database, tmin, tmax)
+        accuracy = database.getAccuracy(database, tmin, tmax)
+        bendModel = database.getBM(database, tmin, tmax)
         dfpos = pd.DataFrame.from_dict(position) #Time format is slightly different. Check if that is important 00:00:00+00:00 Original format
-        print(loadPin)
-        """ fig = plt.figure(figsize = (20, 12))
-        plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0, hspace = 0.1)
-        
-        spec = gridspec.GridSpec(ncols=1, nrows=2,height_ratios=[2, 1])
-        host1 = fig.add_subplot(spec[0])
-        
-        formatter = mdates.DateFormatter("%H:%M:%S")
-        formatter.set_tzinfo(pytz.utc); 
-        plt.gca().xaxis.set_major_formatter(formatter)
-        
-        par1 = host1.twinx()
-        par2 = host1.twinx()
-        par2.spines["right"].set_position(("axes", 1.08))
-        
-        par2.set_frame_on(True)
-        par2.patch.set_visible(False)
-        for sp in par2.spines.values():
-            sp.set_visible(False)
-
-        par2.spines["right"].set_visible(True)
-
-        lines = []
-        
-        if dfloadpin is not None:
-            mask107 = dfloadpin['LoadPin']==107
-            mask207 = dfloadpin['LoadPin']==207
-
-            p1, = host1.plot(dfloadpin[mask107]['T'],dfloadpin[mask107]['Load'], color='blue', label="Cable 107")
-            p1b, = host1.plot(dfloadpin[mask207]['T'],dfloadpin[mask207]['Load'], color='green', label="Cable 207")
-            lines.append(p1)
-            lines.append(p1b)
-            
-        p2, = par1.plot(dfpos['T'],dfpos['Az'], color='red', label="Azimuth")
-        lines.append(p2)
-        if dftrack is not None:
-            p2b, = par1.plot(dftrack['Tth'],dftrack['Azth'], color='red',ls='dashed', label="Azimuth Th.")
-            lines.append(p2b)
-        p3, = par2.plot(dfpos['T'],dfpos['ZA'], color='black', label="Zenith Angle")
-        lines.append(p3)
-        if dftrack is not None:
-            p3b, = par2.plot(dftrack['Tth'],dftrack['ZAth'], color='black',ls='dashed', label="Zenith Angle Th.")
-            lines.append(p3b)
-        
-        host1.set_xlabel("", fontsize=15)
-        host1.set_ylabel("Load [kg]", fontsize=15)
-        host1.set_title(figname, fontsize=15)
-        par1.set_ylabel("Azimuth [deg]", fontsize=15)
-        par2.set_ylabel("Zenith Angle [deg]", fontsize=15)
-
-        host1.yaxis.label.set_color(p1.get_color())
-        par1.yaxis.label.set_color(p2.get_color())
-        par2.yaxis.label.set_color(p3.get_color())
-
-        tkw = dict(size=4, width=1.5)
-        host1.tick_params(axis='y', colors=p1.get_color(), **tkw)
-        par1.tick_params(axis='y', colors=p2.get_color(), **tkw)
-        par2.tick_params(axis='y', colors=p3.get_color(), **tkw)
-        host1.tick_params(axis='x', **tkw)
-            
-        host1.set_xlim(datetime.fromtimestamp(tmin, tz=pytz.utc),datetime.fromtimestamp(tmax, tz=pytz.utc))
-        host1.legend(lines, [l.get_label() for l in lines],fontsize=13)
-        
-        if cmd_status ==0:
-            host1.text(0., 1., 'ACTION FINISHED',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='green', fontsize=15)
-        if cmd_status ==2:
-            host1.text(0., 1., 'ACTION STOPPED BY USER',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='orange', fontsize=15)
-        if cmd_status ==1:
-            host1.text(0., 1., 'ACTION STOPPED BY ERROR',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='red', fontsize=15)
-        if cmd_status ==3:
-            host1.text(0., 1., 'CUSTOM PERIOD',verticalalignment='bottom', horizontalalignment='left',transform=host1.transAxes,color='blue', fontsize=15)
-        
-        host2 = fig.add_subplot(spec[1])
-        plt.gca().xaxis.set_major_formatter(formatter)
-        
-        if dftorque is not None:        
-            p13b, =host2.plot(dftorque['T'],dftorque['El1_mean'], color='chocolate',label="El S")
-            p23b, =host2.plot(dftorque['T'],dftorque['El2_mean'], color='red',label="El N")
-            p12b, =host2.plot(dftorque['T'],dftorque['Az1_mean'], color='lime',label="Az SE")
-            p22b, =host2.plot(dftorque['T'],dftorque['Az2_mean'], color='forestgreen',label="Az NE")
-            p32b, =host2.plot(dftorque['T'],dftorque['Az3_mean'], color='cyan',label="Az NW")
-            p42b, =host2.plot(dftorque['T'],dftorque['Az4_mean'], color='dodgerblue',label="Az SW")
-            host2.set_xlabel('Time', fontsize=15)
-            host2.set_ylabel('Torque [N.m]', fontsize=15)
-            host2.set_xlim(datetime.fromtimestamp(tmin, tz=pytz.utc),datetime.fromtimestamp(tmax, tz=pytz.utc))
-
-            lines = [p13b,p23b,p12b,p22b,p32b,p42b]
-            host2.legend(lines, [l.get_label() for l in lines],fontsize=13,title=addtext)
-        
-        #addhtmlfile(fichierhtml,figname)
-
-        #plt.savefig(figname, bbox_inches='tight')
-        plt.show()
-        #plt.close() """
-        return HttpResponse("Hello")
+        dfloadpin = pd.DataFrame.from_dict(loadPin) 
+        dftrack = pd.DataFrame.from_dict(track) 
+        dftorque = pd.DataFrame.from_dict(torque) 
+        dfbm = pd.DataFrame.from_dict(bendModel) 
+        dfacc = pd.DataFrame.from_dict(accuracy)
+        #print(dfacc)
+        #Pending to check the rest of operations (Park-in/out, GoToPos)
+        figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
+        if dfbm is not None:
+            figuresFunctions.FigureRADec(dfpos, dfbm, firstElement["RA"], firstElement["DEC"], dfacc, dftrack)
+        if dfacc is not None:
+            figuresFunctions.FigAccuracyTime(firstElement["addText"], dfacc)
+        return render(request, "storage/testPLot.html")
         #FigureTrack()

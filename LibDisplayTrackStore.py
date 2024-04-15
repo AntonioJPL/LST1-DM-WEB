@@ -1009,13 +1009,14 @@ def endhtmlfile(logsorted):
     commandPosition = None
     for i in range(0,len(logsorted)):
         #TODO - Fix the finish over the stop !!
-        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1:
-            if logsorted[i][1].find("action error")!= -1 and commandPosition != None:        
-                logs[commandPosition]["LogStatus"] = "Error"
-                commandPosition = None
-            if logsorted[i][1].find("StopDrive")!= -1 and commandPosition != None :
+      
+        if logsorted[i][1].find("action error")!= -1 and commandPosition != None :
+            logs[commandPosition]["LogStatus"] = "Error"
+            commandPosition = None
+        if logsorted[i][1].find("StopDrive")!= -1  and commandPosition != None :
                 logs[commandPosition]["LogStatus"] = "Stopped"
                 commandPosition = None
+        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1:    
             if logsorted[i][1].find("Park_Out Done")!= -1 and commandPosition != None :
                 logs[commandPosition]["LogStatus"] = "Finished"
                 commandPosition = None
@@ -1119,7 +1120,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                 os.mkdir(dirname+"/Track")
         print("====== Track =======")
         selectedType = "1"
-        #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
 
     if lastone ==0 :
         if len(parkoutbeg) != 0:
@@ -1127,7 +1128,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                     os.mkdir(dirname+"/Parkout")
             print("====== Parkout =======")
             selectedType = "2"
-            #checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
+            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
 
         if len(parkinbeg) != 0:
             if path.exists(dirname+"/Parkin")==False :
@@ -1142,7 +1143,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                     os.mkdir(dirname+"/GoToPos")
             print("====== GoToPos =======")
             selectedType = "4"
-            #checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
     
         #if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 

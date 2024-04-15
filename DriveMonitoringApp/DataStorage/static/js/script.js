@@ -64,7 +64,6 @@ fetchLatestData()
 /**
  * Function to generate the Summary and Logs contents
  */
-//TODO Implement filters
 const logsData = []
 const fillLogs = ()=>{
     if(data != null){
@@ -129,9 +128,11 @@ const printAllLogs = ()=>{
  */
 const filterLogs = ()=>{
     divContent.innerHTML = ""
+    console.log(selectedFilters["operation"])
     let prevLine = null
     let dataFound = null
     let increment = 0
+    let filteredResult = []
     if(selectedFilters["time"] != "All"){
         while(dataFound == null){
             let element = logsData[increment].split(" ")
@@ -181,6 +182,46 @@ const filterLogs = ()=>{
                 }
             }
         }
+    }else if(selectedFilters["operation"] != "All"){
+        selectedOption = null
+
+        switch(true){
+            case selectedFilters["operation"] == "GoToPos":
+                selectedOption = "GoToPosition"
+                break
+            case selectedFilters["operation"] == "Park-in":
+                selectedOption = "Park_In command sent"
+                break
+            case selectedFilters["operation"] == "Park-out":
+                selectedOption = "Park_Out command sent"
+                break
+            case selectedFilters["operation"] == "Track":
+                selectedOption = "Start Tracking"
+                break
+        }
+        let prevLine = null
+        logsData.forEach((line, i, array) => {
+            if(line.includes(selectedOption) && prevLine == null){
+                let separator = document.createElement("hr")
+                separator.classList.add("w-full", "self-center", "my-2", "border-[#325D88]", "border-t-[0.1rem]", "opacity-50")
+                divContent.appendChild(separator)
+                let parragraph = document.createElement("p")
+                parragraph.appendChild(document.createTextNode(line))
+                parragraph.classList.add("text-lg", "ms-2")
+                divContent.appendChild(parragraph)
+                prevLine = i-1
+            }else if(line == array[0] && prevLine != null){
+                prevLine = null
+            }else if(prevLine != null){
+                let parragraph = document.createElement("p")
+                parragraph.appendChild(document.createTextNode(line))
+                parragraph.classList.add("text-lg", "ms-2")
+                divContent.appendChild(parragraph)
+            }
+        })
+        let separator = document.createElement("hr")
+        separator.classList.add("w-full", "self-center", "my-2", "border-[#325D88]", "border-t-[0.1rem]", "opacity-50")
+        divContent.appendChild(separator)
     }else{
         printAllLogs()
     }
@@ -406,6 +447,7 @@ const loadFilters = ()=>{
     filterButton.appendChild(document.createTextNode("Filter data"))
     filterButton.addEventListener("click", (e)=>{
         e.preventDefault()
+        window.scrollTo({top: 0, left: 0, behavior: "smooth"})
         if(operationInput.value != "All" && dateInput.value != "All" && timeInput.value != "All"){
             selectedFilters["operation"] = operationInput.value
             selectedFilters["date"] = dateInput.value
@@ -426,7 +468,18 @@ const loadFilters = ()=>{
             }
             showAllData(filteredData)
         }else{
-            if(operationInput.value == "All" && dateInput.value != "All" && timeInput.value != "All"){
+            if(operationInput.value != "All" && dateInput.value == "All" && timeInput.value == "All"){
+                selectedFilters["operation"] = operationInput.value
+                selectedFilters["date"] = dateInput.value
+                selectedFilters["time"] = timeInput.value
+                filteredData = generalData.data.filter((element) => selectedFilters["operation"] == element.type)
+                if(divLogs.classList.contains("bg-[#325D88]")){
+                    let evento = new Event("click")
+                    divLogs.dispatchEvent(evento)
+                }
+                showAllData(filteredData)
+
+            }else if(operationInput.value == "All" && dateInput.value != "All" && timeInput.value != "All"){
                 selectedFilters["date"] = dateInput.value
                 selectedFilters["time"] = timeInput.value
                 if(divLogs.classList.contains("bg-[#325D88]")){
@@ -562,7 +615,7 @@ const showAllData = (data)=>{
 }
 
 const sortByTime = (a,b) => {
-    return new Date(a.Sdate+" "+a.Etime) - new Date(b.Sdate+" "+b.Etime)
+    return new Date(a.Edate+" "+a.Etime) - new Date(b.Edate+" "+b.Etime)
 }
 const resetFilters = (dateInput, defaultDate,  timeInput, defaultTime)=>{
     dateInput.innerHTML = ""

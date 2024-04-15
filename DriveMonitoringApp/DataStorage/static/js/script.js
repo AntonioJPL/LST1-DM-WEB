@@ -42,12 +42,13 @@ let data = null;
 let filters = null;
 let summaryData = null
 let selectedFilters = {}
+let generalData = {}
 fetch("http://127.0.0.1:8000/storage/getPlot")
 
 const fetchLatestData = async() => {
     let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
     .then(response => response.json())
-    let generalData = await fetch("http://127.0.0.1:8000/storage/getData")
+    generalData = await fetch("http://127.0.0.1:8000/storage/getData")
     .then(response => response.json())
     showAllData(generalData.data)
     data = serverRes.data
@@ -55,6 +56,7 @@ const fetchLatestData = async() => {
     summaryData = data.filter(element => element.LogStatus != null)
     startSummary()
     loadFilters()
+    fillLogs()
 }
 
 fetchLatestData()
@@ -127,16 +129,25 @@ const printAllLogs = ()=>{
  */
 const filterLogs = ()=>{
     divContent.innerHTML = ""
-    prevLine = null
-    dataFound = null
-    increment = 0
+    let prevLine = null
+    let dataFound = null
+    let increment = 0
     if(selectedFilters["time"] != "All"){
         while(dataFound == null){
             let element = logsData[increment].split(" ")
-            if(element[0].includes(selectedFilters["time"])){
-                dataFound = increment
-            }
-            if(element[0] == "-----------------------"){
+            if (element[0] != "-----------------------"){
+                if(selectedFilters["operation"] == "All"){
+                    if(element[0].includes(selectedFilters["time"])){
+                        dataFound = increment
+                    }
+                }else{
+                    if(element[0] == selectedFilters["time"]){
+                        dataFound = increment
+                    }else if(element[0][0] == selectedFilters["time"][0] && element[0][1] == selectedFilters["time"][1] && element[0][2] == selectedFilters["time"][2] && element[0][3] == selectedFilters["time"][3] && element[0][4] == selectedFilters["time"][4] && element[0][5] == selectedFilters["time"][5] && element[0][6] == selectedFilters["time"][6]){
+                        dataFound = increment
+                    }
+                }
+            }else{
                 prevLine = increment
             }
             increment++
@@ -153,6 +164,7 @@ const filterLogs = ()=>{
                 separator.classList.add("w-full", "self-center", "my-2", "border-[#325D88]", "border-t-[0.1rem]", "opacity-50")
                 divContent.appendChild(separator)
                 if(i != prevLine){
+                    lastLine = i
                     break
                 }
             }else{
@@ -283,6 +295,33 @@ const loadFilters = ()=>{
     });
     divOperation.appendChild(operationLabel)
     divOperation.appendChild(operationInput)
+    operationInput.addEventListener("change", ()=>{
+        if(operationInput.value != "All"){
+            dataFiltered = generalData.data.filter((element)=> element.type == operationInput.value)
+            dateInput.innerHTML = ""
+            dateInput.appendChild(defaultDate)
+            timeInput.innerHTML = ""
+            timeInput.appendChild(defaultTime)
+            dataFiltered.forEach(element =>{
+                if(dateInput.children.length == 0){
+                    let option = document.createElement("option")
+                    option.setAttribute("value", element.Sdate)
+                    option.appendChild(document.createTextNode(element.Sdate))
+                    dateInput.appendChild(option)
+                }else{
+                    let foundElements = [].slice.call(dateInput.children).filter(currentElement=> currentElement.value == element.Sdate)
+                    if(foundElements.length == 0){
+                        let option = document.createElement("option")
+                        option.setAttribute("value", element.Sdate)
+                        option.appendChild(document.createTextNode(element.Sdate))
+                        dateInput.appendChild(option)
+                    }
+                }
+            })
+        }else{
+            resetFilters(dateInput, defaultDate, timeInput, defaultTime)
+        }
+    })
     /**
      * Date and time filters creation
      */
@@ -335,12 +374,23 @@ const loadFilters = ()=>{
     dateInput.addEventListener("change", ()=>{
         if(dateInput.value != "All"){
             timeInput.innerHTML = ""
-            filters.times[dateInput.value].forEach(time => {
-                let option = document.createElement("option")
-                option.setAttribute("value", time)
-                option.appendChild(document.createTextNode(time))
-                timeInput.appendChild(option)
-            })
+            if(operationInput.value == "All"){
+                filters.times[dateInput.value].forEach(time => {
+                    let option = document.createElement("option")
+                    option.setAttribute("value", time)
+                    option.appendChild(document.createTextNode(time))
+                    timeInput.appendChild(option)
+                })
+            }else{
+                let filteredTimes = structuredClone(generalData.data.filter((element)=> element.type == operationInput.value && element.Sdate == dateInput.value))
+                for (let i = 0; i < filteredTimes.length; i++) {
+                    let option = document.createElement("option")
+                    option.setAttribute("value", filteredTimes[i].Etime)
+                    option.appendChild(document.createTextNode(filteredTimes[i].Etime))
+                    timeInput.appendChild(option)
+                }
+
+            }
         }else{
             timeInput.innerHTML = ""
             timeInput.appendChild(defaultTime)
@@ -356,8 +406,7 @@ const loadFilters = ()=>{
     filterButton.appendChild(document.createTextNode("Filter data"))
     filterButton.addEventListener("click", (e)=>{
         e.preventDefault()
-        //TODO - Finish filtering the visual contents
-        if(operationInput.value != "All" || dateInput.value != "All" || timeInput.value != "All"){
+        if(operationInput.value != "All" && dateInput.value != "All" && timeInput.value != "All"){
             selectedFilters["operation"] = operationInput.value
             selectedFilters["date"] = dateInput.value
             selectedFilters["time"] = timeInput.value
@@ -365,12 +414,57 @@ const loadFilters = ()=>{
                 let evento = new Event("click")
                 divLogs.dispatchEvent(evento)
             }
+            let filteredData =  []
+            if(selectedFilters["operation"] != "All"){
+                filteredData = generalData.data.filter((element) => selectedFilters["operation"] == element.type)
+            }
+            if(selectedFilters["date"] != "All"){
+                filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
+            }
+            if(selectedFilters["time"] != "All"){
+                filteredData = generalData.data.filter((element) => selectedFilters["time"] == element.Etime)
+            }
+            showAllData(filteredData)
         }else{
-            selectedFilters = {}
-            divContent.classList.remove("overflow-y-scroll")
-            setTimeout(()=>{divContent.classList.add("overflow-y-scroll")}, 1)
-            if(divLogs.classList.contains("bg-[#325D88]")){
-                printAllLogs()
+            if(operationInput.value == "All" && dateInput.value != "All" && timeInput.value != "All"){
+                selectedFilters["date"] = dateInput.value
+                selectedFilters["time"] = timeInput.value
+                if(divLogs.classList.contains("bg-[#325D88]")){
+                    let evento = new Event("click")
+                    divLogs.dispatchEvent(evento)
+                }
+                let filteredData =  []
+                if(selectedFilters["date"] != "All"){
+                    filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
+                }
+                if(selectedFilters["time"] != "All"){
+                    let lastLine = 0
+                    let found = false
+                    for (let i = 0; i < logsData.length; i++) {
+                        if(logsData[i] != "-----------------------" && !found){
+                            let elementos = logsData[i].split(" ")
+                            if(elementos[0] == selectedFilters["time"]){
+                                found = true
+                            }
+                        }else{
+                            if(logsData[i] == "-----------------------" && found){
+                                let elementos = logsData[i-1].split(" ")
+                                filteredData = generalData.data.filter((element) => elementos[0] == element.Etime)
+                                break
+                            }
+                        }
+                        
+                    }
+                }
+                showAllData(filteredData)
+            }else{
+                selectedFilters = {}
+                divContent.classList.remove("overflow-y-scroll")
+                setTimeout(()=>{divContent.classList.add("overflow-y-scroll")}, 1)
+                if(divLogs.classList.contains("bg-[#325D88]")){
+                    printAllLogs()
+                }
+                showAllData(generalData.data)
             }
         }
     })
@@ -380,15 +474,14 @@ const loadFilters = ()=>{
     clearButton.addEventListener("click", (e)=>{
         e.preventDefault()
         selectedFilters = {}
-        dateInput.selectedIndex = 0
         operationInput.selectedIndex = 0
-        timeInput.innerHTML = ""
-        timeInput.appendChild(defaultTime)
+        resetFilters(dateInput, defaultDate, timeInput, defaultTime)
         divContent.classList.remove("overflow-y-scroll")
         setTimeout(()=>{divContent.classList.add("overflow-y-scroll")}, 1)
         if(divLogs.classList.contains("bg-[#325D88]")){
            printAllLogs()
         }
+        showAllData(generalData.data)
     })
 
     buttons.appendChild(filterButton)
@@ -410,7 +503,7 @@ const showAllData = (data)=>{
         graphicContents = document.createElement("div")
         graphicContents.classList.add("w-[66%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
     }else{
-        contenSection.removeChild(graphicContents)
+        graphicContents.innerHTML = "" 
     }
     data.forEach(element => {
         let card = document.createElement("div")
@@ -469,5 +562,19 @@ const showAllData = (data)=>{
 }
 
 const sortByTime = (a,b) => {
-    return new Date(a.Sdate+" "+a.Stime)- new Date(b.Sdate+" "+b.Stime)
+    return new Date(a.Sdate+" "+a.Etime) - new Date(b.Sdate+" "+b.Etime)
+}
+const resetFilters = (dateInput, defaultDate,  timeInput, defaultTime)=>{
+    dateInput.innerHTML = ""
+    dateInput.appendChild(defaultDate)
+    let dates = filters.dates
+    dates.forEach(date => {
+        let option = document.createElement("option")
+        option.setAttribute("value", date)
+        option.appendChild(document.createTextNode(date))
+        dateInput.appendChild(option)
+    });
+    timeInput.innerHTML = ""
+    timeInput.appendChild(defaultTime)
+
 }

@@ -19,6 +19,8 @@ import pandas as pd
 
 from . import figuresFunctions
 
+import plotly.graph_objects as go
+
 database = MongoDb
 
 def index(request):
@@ -154,12 +156,84 @@ def getFirstPlot(request):
         dftorque = pd.DataFrame.from_dict(torque) 
         dfbm = pd.DataFrame.from_dict(bendModel) 
         dfacc = pd.DataFrame.from_dict(accuracy)
-        #print(dfacc)
-        #Pending to check the rest of operations (Park-in/out, GoToPos)
-        figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
+
+        fig = go.Figure()
+        if dfloadpin is not None:
+            mask107 = dfloadpin['LoadPin']==107
+            mask207 = dfloadpin['LoadPin']==207
+            loadPinSorted = dfloadpin.sort_values(by=["T"])
+            fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107"))
+            fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207"))
+
+
+        dfposSorted = dfpos.sort_values(by=["T"])
+        fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), name="Azimuth", yaxis="y2"))
+        fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), name="Zenith Angle", yaxis="y3"))
+        dftrackSorted = None
+        if dftrack is not None:
+            dftrackSorted = dftrack.sort_values(by=["T"])
+            fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), name="Azimuth Th.", yaxis="y2"))
+            fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), name="Zenith Angle Th.", yaxis="y3"))
+        
+            
+        fig.update_layout(
+            title="My first interactive plot (I hope)",
+            xaxis_tickformat = "%H:%M:%S",
+            yaxis= dict(
+                title="Load [KG]",
+                titlefont=dict(
+                    color='blue'
+                ),
+                tickfont=dict(
+                    color='blue'
+                ),
+            ),
+            yaxis2= dict(
+                title="Azimuth [DEG]",
+                titlefont=dict(
+                    color='red'
+                ),
+                tickfont=dict(
+                    color='red'
+                ),
+                anchor="x",
+                overlaying="y",
+                side="right"
+            ),
+            yaxis3= dict(
+                title="Zenith Angle [DEG]",
+                titlefont=dict(
+                    color='black'
+                ),
+                tickfont=dict(
+                    color='black'
+                ),
+                anchor="free",
+                overlaying="y",
+                side="right",
+                autoshift=True,
+                #dividercolor="yellow",
+                #dividerwidth=15
+                #title_something to space the title from the ticks
+                shift=20
+
+            ),
+            legend= dict( 
+                orientation="h",
+                yanchor="middle",
+                y=-0.1,
+                xanchor="center",
+                x=0.95,
+            ),
+        )
+        fig.show()
+
+        #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
         if dfbm is not None:
-            figuresFunctions.FigureRADec(dfpos, dfbm, firstElement["RA"], firstElement["DEC"], dfacc, dftrack)
+            print("There is DFBM")
+            #figuresFunctions.FigureRADec(dfpos, dfbm, firstElement["RA"], firstElement["DEC"], dfacc, dftrack)
         if dfacc is not None:
-            figuresFunctions.FigAccuracyTime(firstElement["addText"], dfacc)
+            print("There is DFACC")
+            #figuresFunctions.FigAccuracyTime(firstElement["addText"], dfacc)
         return render(request, "storage/testPLot.html")
         #FigureTrack()

@@ -20,6 +20,7 @@ import pandas as pd
 from . import figuresFunctions
 
 import plotly.graph_objects as go
+from django.contrib.staticfiles import finders
 
 database = MongoDb
 
@@ -59,10 +60,10 @@ def storeData(request):
         generalData["Etime"] = body[0]["Etime"][0]
         generalData["RA"] = body[0]["RA"][0]
         generalData["DEC"] = body[0]["DEC"][0]
-        imagePattern = body[0]["img"][0].split("/")
+        imagePattern = body[0]["file"][0].split("/")
         imageSpltiEnd = imagePattern[-1].split(".")
         finalImage = imagePattern[-4]+"/"+imagePattern[-3]+"/"+imagePattern[-2]+"/"+imageSpltiEnd[0]
-        generalData["img"] = finalImage
+        generalData["file"] = finalImage
         generalData["addText"] = body[0]["addText"][0]
         #TODO - Store the rest of the data
         if len(body[0]["position"]) != 0:
@@ -127,106 +128,38 @@ def getData(request):
         else:
             return JsonResponse({"Message": "There is no data to show"})
         
-#Function that generates the plots for the first operation. TESTING FUNCTION
-def getFirstPlot(request):
-    print(request.method)
-    if request.method == "GET":
-        firstElement = database.getFirstData(database)
-        print(firstElement)
-        stringTime = firstElement["Sdate"]+" "+firstElement["Stime"]
-        tmin = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
-        stringTime = firstElement["Edate"]+" "+firstElement["Etime"]
-        tmax = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
-        print(tmin, tmax)
-        """  operation = database.getOperationTime(database)
-        print("Esta es la operacion")
-        print(operation)
-        tmin = operation[0]["Tmin"]
-        tmax = operation[0]["Tmax"] """
-        cmd_status = 0
-        position = database.getPosition(database, tmin, tmax)
-        loadPin = database.getLoadPin(database, tmin, tmax)
-        track = database.getTrack(database, tmin, tmax)
-        torque = database.getTorque(database, tmin, tmax)
-        accuracy = database.getAccuracy(database, tmin, tmax)
-        bendModel = database.getBM(database, tmin, tmax)
-        dfpos = pd.DataFrame.from_dict(position) #Time format is slightly different. Check if that is important 00:00:00+00:00 Original format
-        dfloadpin = pd.DataFrame.from_dict(loadPin) 
-        dftrack = pd.DataFrame.from_dict(track) 
-        dftorque = pd.DataFrame.from_dict(torque) 
-        dfbm = pd.DataFrame.from_dict(bendModel) 
-        dfacc = pd.DataFrame.from_dict(accuracy)
-
-        fig = go.Figure()
-        if dfloadpin is not None:
-            mask107 = dfloadpin['LoadPin']==107
-            mask207 = dfloadpin['LoadPin']==207
-            loadPinSorted = dfloadpin.sort_values(by=["T"])
-            fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107"))
-            fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207"))
-
-
-        dfposSorted = dfpos.sort_values(by=["T"])
-        fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), name="Azimuth", yaxis="y2"))
-        fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), name="Zenith Angle", yaxis="y3"))
-        dftrackSorted = None
-        if dftrack is not None:
-            dftrackSorted = dftrack.sort_values(by=["T"])
-            fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), name="Azimuth Th.", yaxis="y2"))
-            fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), name="Zenith Angle Th.", yaxis="y3"))
+#Function that generates all the plots. TESTING FUNCTION
+def generatePlots(date):
+        operation = database.getOperation(database,date)
+        data = database.getDatedData(database, operation[0]["Tmin"], operation[0]["Tmax"])
+        for element in data:
+            stringTime = element["Sdate"]+" "+element["Stime"]
+            tmin = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
+            stringTime = element["Edate"]+" "+element["Etime"]
+            tmax = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
+            #operation = database.getOperationTime(database)
+            #print("Esta es la operacion")
+            #print(operation)
+            #tmin = operation[0]["Tmin"]
+            #tmax = operation[0]["Tmax"] 
+            #cmd_status = 0
+            position = database.getPosition(database, tmin, tmax)
+            loadPin = database.getLoadPin(database, tmin, tmax)
+            track = database.getTrack(database, tmin, tmax)
+            torque = database.getTorque(database, tmin, tmax)
+            accuracy = database.getAccuracy(database, tmin, tmax)
+            bendModel = database.getBM(database, tmin, tmax)
+            dfpos = pd.DataFrame.from_dict(position) #Time format is slightly different. Check if that is important 00:00:00+00:00 Original format
+            dfloadpin = pd.DataFrame.from_dict(loadPin) 
+            dftrack = pd.DataFrame.from_dict(track) 
+            dftorque = pd.DataFrame.from_dict(torque) 
+            dfbm = pd.DataFrame.from_dict(bendModel) 
+            dfacc = pd.DataFrame.from_dict(accuracy)
+            file = element["file"].split("/")
+            filename = file[3]
+            file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+            figuresFunctions.FigureTrack(dfpos, dfloadpin, dftrack, dftorque, file+"/"+filename+".html")
         
-            
-        fig.update_layout(
-            title="My first interactive plot (I hope)",
-            xaxis_tickformat = "%H:%M:%S",
-            yaxis= dict(
-                title="Load [KG]",
-                titlefont=dict(
-                    color='blue'
-                ),
-                tickfont=dict(
-                    color='blue'
-                ),
-            ),
-            yaxis2= dict(
-                title="Azimuth [DEG]",
-                titlefont=dict(
-                    color='red'
-                ),
-                tickfont=dict(
-                    color='red'
-                ),
-                anchor="x",
-                overlaying="y",
-                side="right"
-            ),
-            yaxis3= dict(
-                title="Zenith Angle [DEG]",
-                titlefont=dict(
-                    color='black'
-                ),
-                tickfont=dict(
-                    color='black'
-                ),
-                anchor="free",
-                overlaying="y",
-                side="right",
-                autoshift=True,
-                #dividercolor="yellow",
-                #dividerwidth=15
-                #title_something to space the title from the ticks
-                shift=20
-
-            ),
-            legend= dict( 
-                orientation="h",
-                yanchor="middle",
-                y=-0.1,
-                xanchor="center",
-                x=0.95,
-            ),
-        )
-        fig.show()
 
         #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
         if dfbm is not None:
@@ -235,5 +168,10 @@ def getFirstPlot(request):
         if dfacc is not None:
             print("There is DFACC")
             #figuresFunctions.FigAccuracyTime(firstElement["addText"], dfacc)
-        return render(request, "storage/testPLot.html")
+        
         #FigureTrack()
+
+def showTestView(request):
+    if request.method == "GET":
+        generatePlots("2024-02-01")
+        return render(request, "storage/testPLot.html")

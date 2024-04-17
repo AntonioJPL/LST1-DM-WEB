@@ -9,6 +9,7 @@ import os
 import glob
 from datetime import datetime
 import pytz
+from django.contrib.staticfiles import finders
 
 class MongoDb:
 
@@ -16,7 +17,6 @@ class MongoDb:
     dbname = my_client['Drive-Monitoring']
     collection_logs = dbname["Logs"]
     collection_data = dbname["Data"]
-    img_rute = "/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/"
    
     #Function that initialize the general data
     def __init__(self):
@@ -97,15 +97,21 @@ class MongoDb:
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
         data = list(self.collection_data.find().sort({"Stime": -1}).sort({"Sdate": +1}))
         types = list(self.dbname["Types"].find())
+        elements = []
         for element in data:
             element["_id"] = str(element["_id"])
             if element["type"] is not None:
                 element["type"] = [searchedElement["name"] for searchedElement in types if searchedElement["_id"] == ObjectId(element["type"])]
                 element["type"] = element["type"][0]
-            images = glob.glob(self.img_rute+element["img"]+"*")
-            for i in range(0, len(images)):
-                images[i] = images[i].replace(self.img_rute, "static/")
-            element["img"] = images
+            file = element["file"].split("/")
+            filename = file[3]
+            file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+            files = glob.glob(file+"/"+filename+"*")
+            element["file"] = []
+            for i in range(0, len(files)):
+                files[i] = files[i].split("/")
+                files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                element["file"].append(files[i])
         return data
     
     def storeLogs(self, data):
@@ -487,6 +493,12 @@ class MongoDb:
             result["ZAC"][index] = data["ZAC"]
             index += 1
         return result
-    def getOperationTime(self):
-        return list(self.dbname["Operations"].find())
+    def getOperation(self, date):
+        return list(self.dbname["Operations"].find({"Date": date}))
+    def getDatedData(self, tmin, tmax):
+        start = datetime.fromtimestamp(tmin)
+        start = str(start).split(" ")
+        end = datetime.fromtimestamp(tmax)
+        end = str(end).split(" ")
+        return list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}]))
     

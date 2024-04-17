@@ -43,7 +43,6 @@ let filters = null;
 let summaryData = null
 let selectedFilters = {}
 let generalData = {}
-fetch("http://127.0.0.1:8000/storage/getPlot")
 
 const fetchLatestData = async() => {
     let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
@@ -550,6 +549,7 @@ const loadFilters = ()=>{
  * Function that represents all the data recieved from the database
  */
 const showAllData = (data)=>{
+    console.log(data)
     data.sort(sortByTime)
     let graphicContents = document.querySelector("div.graphicSection")
     if( graphicContents == null){
@@ -597,13 +597,16 @@ const showAllData = (data)=>{
         })
         let histograms = document.createElement("section")
         histograms.classList.add("flex", "flex-col", "gap-y-2", "my-2")
-        let imageArray = [...element.img]
-        imageArray.sort((a,b)=>{return a.length - b.length})
-        for (let i = 0; i < imageArray.length; i++) {         
+        let imageArray = [...element.file]
+        imageArray.sort((a,b)=>{return a.length - b.length})  
+        for (let i = 0; i < imageArray.length; i++) {   
             let newImage = document.createElement("img")
-            newImage.setAttribute("src", imageArray[i])
+            newImage.setAttribute("src", imageArray[i].replace("html", "img").replace(".html", ".png"))
             newImage.classList.add("w-[95%]", "h-[25rem]", "self-center")
-            histograms.appendChild(newImage)
+            /* let newIframe = document.createElement("iframe")
+            newIframe.setAttribute("src", imageArray[i])
+            newIframe.classList.add("w-[95%]", "h-[25rem]", "self-center", "hidden") */
+            histograms.appendChild(newImage) 
         }
 
         card.appendChild(title)

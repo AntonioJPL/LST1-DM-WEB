@@ -398,7 +398,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     dataLine["Etime"] = []
     dataLine["RA"] = []
     dataLine["DEC"] = []
-    dataLine["img"] = []
+    dataLine["file"] = []
     dataLine["addText"] = []
     dataLine["position"] = []
     dataLine["loadPin"] = []
@@ -413,7 +413,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     dataLine["Edate"].append(str(datetime.fromtimestamp(tmax).strftime("%Y-%m-%d")))
     dataLine["RA"].append(ra)
     dataLine["DEC"].append(dec)
-    dataLine["img"].append(figname)
+    dataLine["file"].append(figname)
     dataLine["addText"].append(addtext)
     if dfpos is not None:
         dataLine["position"].append(dfpos.to_json())
@@ -431,7 +431,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     if dfbm is not None:
         dataLine["bendModel"].append(dfbm.to_json())
         #FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
-    print(dfacc)
+    #print(dfacc)
     data = []
     data.append(dataLine)  
     req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
@@ -921,7 +921,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             sendname = endname.strftime("%Y%m%d_%Hh%Mm%Ss")
             #print(sbegname)
             #print(sendname)
-            figname = "_%s_%s"%(sbegname,sendname) + ".png"
+            figname = "_%s_%s"%(sbegname,sendname) + ".html"
             figname = figpre + figname.replace(":","")
             #print(figname)
             trackok2 = trackok[i]
@@ -957,7 +957,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
         endname = datetime.fromtimestamp(end_ok[-1], tz=pytz.utc)
         sbegname = begname.strftime("%Y%m%d_%Hh%Mm%Ss")
         sendname = endname.strftime("%Y%m%d_%Hh%Mm%Ss")
-        figname = "_%s_%s"%(sbegname,sendname) + ".png"
+        figname = "_%s_%s"%(sbegname,sendname) + ".html"
         figname = figpre + figname.replace(":","")
         trackok2 = trackok[-1]
         raok2 = raok[i]
@@ -1056,7 +1056,7 @@ def endhtmlfile(logsorted):
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     
-    dirname = "./DriveMonitoringApp/DataStorage/static/img/Log_" + filename
+    dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
     dirnamehtml = dirname
 
     generallog.clear()

@@ -8,6 +8,7 @@ from bson import ObjectId
 import os
 import glob
 from datetime import datetime
+import datetime as DT
 import pytz
 from django.contrib.staticfiles import finders
 
@@ -95,24 +96,28 @@ class MongoDb:
         return data
     def listData(self, date):
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
-        data = list(self.collection_data.find().sort({"Stime": -1}).sort({"Sdate": +1}))
         types = list(self.dbname["Types"].find())
         elements = []
-        for element in data:
-            element["_id"] = str(element["_id"])
-            if element["type"] is not None:
-                element["type"] = [searchedElement["name"] for searchedElement in types if searchedElement["_id"] == ObjectId(element["type"])]
-                element["type"] = element["type"][0]
-            file = element["file"].split("/")
-            filename = file[3]
+        endDate = datetime.strptime(date.replace("-", ""), '%Y%m%d')
+        endDate += DT.timedelta(days=1)
+        for element in types:
+            plot = {}
+            plot["type"] = element["name"]
+            foundElement = list(self.dbname["Data"].aggregate([{"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
+            print(foundElement)
+            file = foundElement[0]["file"].split("/")
+            filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
             file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
             files = glob.glob(file+"/"+filename+"*")
-            element["file"] = []
+            plot["file"] = []
             for i in range(0, len(files)):
                 files[i] = files[i].split("/")
+                #print(files[i])
                 files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
-                element["file"].append(files[i])
-        return data
+                plot["file"].append(files[i])
+            plot["data"]=foundElement
+            elements.append(plot)
+        return elements
     
     def storeLogs(self, data):
         operation = {}
@@ -501,4 +506,6 @@ class MongoDb:
         end = datetime.fromtimestamp(tmax)
         end = str(end).split(" ")
         return list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}]))
+    def getOperationTypes(self):
+        return list(self.dbname["Types"].find())
     

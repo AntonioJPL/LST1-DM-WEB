@@ -132,7 +132,21 @@ def getData(request):
 def generatePlots(date):
         operation = database.getOperation(database,date)
         data = database.getDatedData(database, operation[0]["Tmin"], operation[0]["Tmax"])
+        generalTrack = {}
+        generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["dfacc"], generalTrack["dfbm"], generalTrack["name"] = ([] for i in range(7))
+        generalParkin = {}
+        generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["dfacc"], generalParkin["dfbm"], generalParkin["name"] = ([] for i in range(7))
+        generalParkout = {}
+        generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["dfacc"], generalParkout["dfbm"], generalParkout["name"] = ([] for i in range(7))
+        generalGotopos = {}
+        generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"] = ([] for i in range(7))
+        types = database.getOperationTypes(database)
+        foundType = None
         for element in data:
+            for type in types:
+                if str(type["_id"]) == element["type"]:
+                    foundType =  type["name"]
+            
             stringTime = element["Sdate"]+" "+element["Stime"]
             tmin = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
             stringTime = element["Edate"]+" "+element["Etime"]
@@ -149,16 +163,62 @@ def generatePlots(date):
             torque = database.getTorque(database, tmin, tmax)
             accuracy = database.getAccuracy(database, tmin, tmax)
             bendModel = database.getBM(database, tmin, tmax)
-            dfpos = pd.DataFrame.from_dict(position) #Time format is slightly different. Check if that is important 00:00:00+00:00 Original format
+            dfpos = pd.DataFrame.from_dict(position)
             dfloadpin = pd.DataFrame.from_dict(loadPin) 
             dftrack = pd.DataFrame.from_dict(track) 
             dftorque = pd.DataFrame.from_dict(torque) 
             dfbm = pd.DataFrame.from_dict(bendModel) 
             dfacc = pd.DataFrame.from_dict(accuracy)
             file = element["file"].split("/")
-            filename = file[3]
             file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
-            figuresFunctions.FigureTrack(dfpos, dfloadpin, dftrack, dftorque, file+"/"+filename+".html")
+            if foundType == "Track":
+                generalTrack["dfpos"].append(dfpos)
+                generalTrack["dfloadpin"].append(dfloadpin)
+                generalTrack["dftrack"].append(dftrack)
+                generalTrack["dftorque"].append(dftorque)
+                if dfacc is not None:
+                    generalTrack["dfacc"].append(dfacc)
+                if dfbm is not None:
+                    generalTrack["dfbm"].append(dfbm)
+                filename = "Track-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                generalTrack["name"] = file+"/"+filename+".html"
+            if foundType == "Park-in":
+                generalParkin["dfpos"].append(dfpos)
+                generalParkin["dfloadpin"].append(dfloadpin)
+                generalParkin["dftrack"].append(dftrack)
+                generalParkin["dftorque"].append(dftorque)
+                if dfacc is not None:
+                    generalParkin["dfacc"].append(dfacc)
+                if dfbm is not None:
+                    generalParkin["dfbm"].append(dfbm)
+                    filename ="Park-in-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                generalParkin["name"] = file+"/"+filename+".html"
+            if foundType == "Park-out":
+                generalParkout["dfpos"].append(dfpos)
+                generalParkout["dfloadpin"].append(dfloadpin)
+                generalParkout["dftrack"].append(dftrack)
+                generalParkout["dftorque"].append(dftorque)
+                if dfacc is not None:
+                    generalParkout["dfacc"].append(dfacc)
+                if dfbm is not None:
+                    generalParkout["dfbm"].append(dfbm)
+                filename = "Park-out-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                generalParkout["name"] = file+"/"+filename+".html"
+            if foundType == "GoToPos":
+                generalGotopos["dfpos"].append(dfpos)
+                generalGotopos["dfloadpin"].append(dfloadpin)
+                generalGotopos["dftrack"].append(dftrack)
+                generalGotopos["dftorque"].append(dftorque)
+                if dfacc is not None:
+                    generalGotopos["dfacc"].append(dfacc)
+                if dfbm is not None:
+                    generalGotopos["dfbm"].append(dfbm)
+                filename = "GoToPos-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                generalGotopos["name"] = file+"/"+filename+".html"
+        figuresFunctions.FigureTrack(generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+        figuresFunctions.FigureTrack(generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+        figuresFunctions.FigureTrack(generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+        figuresFunctions.FigureTrack(generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
         
 
         #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)

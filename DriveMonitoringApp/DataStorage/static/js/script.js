@@ -131,7 +131,6 @@ const filterLogs = ()=>{
     let prevLine = null
     let dataFound = null
     let increment = 0
-    let filteredResult = []
     if(selectedFilters["time"] != "All"){
         while(dataFound == null){
             let element = logsData[increment].split(" ")
@@ -342,7 +341,7 @@ const loadFilters = ()=>{
             dateInput.appendChild(defaultDate)
             timeInput.innerHTML = ""
             timeInput.appendChild(defaultTime)
-            dataFiltered.forEach(element =>{
+            dataFiltered[0].data.forEach(element =>{
                 if(dateInput.children.length == 0){
                     let option = document.createElement("option")
                     option.setAttribute("value", element.Sdate)
@@ -422,7 +421,8 @@ const loadFilters = ()=>{
                     timeInput.appendChild(option)
                 })
             }else{
-                let filteredTimes = structuredClone(generalData.data.filter((element)=> element.type == operationInput.value && element.Sdate == dateInput.value))
+                let filteredTimes = structuredClone(generalData.data.filter((element)=> element.type == operationInput.value))
+                filteredTimes = filteredTimes[0].data.filter((element)=> element.Sdate == dateInput.value)
                 for (let i = 0; i < filteredTimes.length; i++) {
                     let option = document.createElement("option")
                     option.setAttribute("value", filteredTimes[i].Etime)
@@ -459,12 +459,6 @@ const loadFilters = ()=>{
             if(selectedFilters["operation"] != "All"){
                 filteredData = generalData.data.filter((element) => selectedFilters["operation"] == element.type)
             }
-            if(selectedFilters["date"] != "All"){
-                filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
-            }
-            if(selectedFilters["time"] != "All"){
-                filteredData = generalData.data.filter((element) => selectedFilters["time"] == element.Etime)
-            }
             showAllData(filteredData)
         }else{
             if(operationInput.value != "All" && dateInput.value == "All" && timeInput.value == "All"){
@@ -487,10 +481,9 @@ const loadFilters = ()=>{
                 }
                 let filteredData =  []
                 if(selectedFilters["date"] != "All"){
-                    filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
+                    filteredData = generalData.data.data.filter((element) => selectedFilters["date"] == element.Sdate)
                 }
                 if(selectedFilters["time"] != "All"){
-                    let lastLine = 0
                     let found = false
                     for (let i = 0; i < logsData.length; i++) {
                         if(logsData[i] != "-----------------------" && !found){
@@ -501,7 +494,7 @@ const loadFilters = ()=>{
                         }else{
                             if(logsData[i] == "-----------------------" && found){
                                 let elementos = logsData[i-1].split(" ")
-                                filteredData = generalData.data.filter((element) => elementos[0] == element.Etime)
+                                filteredData = generalData.data.data.filter((element) => elementos[0] == element.Etime)
                                 break
                             }
                         }
@@ -564,7 +557,7 @@ const showAllData = (data)=>{
         let title = document.createElement("h3")
         title.appendChild(document.createTextNode(element.type))
         title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
-        let summary = document.createElement("section")
+        /* let summary = document.createElement("section")
         summary.classList.add("flex", "items-center", "justify-center", "border-b-[#3e3f3a]", "border-b-[0.15rem]", "border-opacity-50", "gap-x-5")
         let labels = ["Start: ", "End: ", "RA: ", "DEC: "]
         labels.forEach(label => {
@@ -594,23 +587,24 @@ const showAllData = (data)=>{
                 divParragraph.appendChild(pContent)
             }
             summary.appendChild(divParragraph)
-        })
+        }) */
         let histograms = document.createElement("section")
         histograms.classList.add("flex", "flex-col", "gap-y-2", "my-2")
         let imageArray = [...element.file]
-        imageArray.sort((a,b)=>{return a.length - b.length})  
+        imageArray.sort((a,b)=>{return a.length - b.length})
         for (let i = 0; i < imageArray.length; i++) {   
-            let newImage = document.createElement("img")
+            /*let newImage = document.createElement("img")
             newImage.setAttribute("src", imageArray[i].replace("html", "img").replace(".html", ".png"))
-            newImage.classList.add("w-[95%]", "h-[25rem]", "self-center")
-            /* let newIframe = document.createElement("iframe")
+            newImage.classList.add("w-[95%]", "h-[25rem]", "self-center") */
+            let newIframe = document.createElement("iframe")
             newIframe.setAttribute("src", imageArray[i])
-            newIframe.classList.add("w-[95%]", "h-[25rem]", "self-center", "hidden") */
-            histograms.appendChild(newImage) 
+            newIframe.setAttribute("loading", "lazy")
+            newIframe.classList.add("w-[95%]", "h-[25rem]", "self-center")
+            histograms.appendChild(newIframe)
         }
 
         card.appendChild(title)
-        card.appendChild(summary)
+        //card.appendChild(summary)
         card.appendChild(histograms)
         graphicContents.appendChild(card)
     });

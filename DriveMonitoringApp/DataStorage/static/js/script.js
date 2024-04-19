@@ -547,7 +547,7 @@ const showAllData = (data)=>{
     let graphicContents = document.querySelector("div.graphicSection")
     if( graphicContents == null){
         graphicContents = document.createElement("div")
-        graphicContents.classList.add("w-[66%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
+        graphicContents.classList.add("w-[90%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
     }else{
         graphicContents.innerHTML = "" 
     }

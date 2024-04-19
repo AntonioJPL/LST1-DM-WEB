@@ -133,13 +133,13 @@ def generatePlots(date):
         operation = database.getOperation(database,date)
         data = database.getDatedData(database, operation[0]["Tmin"], operation[0]["Tmax"])
         generalTrack = {}
-        generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["dfacc"], generalTrack["dfbm"], generalTrack["name"] = ([] for i in range(7))
+        generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["dfacc"], generalTrack["dfbm"], generalTrack["name"], generalTrack["addText"] = ([] for i in range(8))
         generalParkin = {}
-        generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["dfacc"], generalParkin["dfbm"], generalParkin["name"] = ([] for i in range(7))
+        generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["dfacc"], generalParkin["dfbm"], generalParkin["name"], generalParkin["addText"] = ([] for i in range(8))
         generalParkout = {}
-        generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["dfacc"], generalParkout["dfbm"], generalParkout["name"] = ([] for i in range(7))
+        generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["dfacc"], generalParkout["dfbm"], generalParkout["name"], generalParkout["addText"] = ([] for i in range(8))
         generalGotopos = {}
-        generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"] = ([] for i in range(7))
+        generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"], generalGotopos["addText"] = ([] for i in range(8))
         types = database.getOperationTypes(database)
         foundType = None
         for element in data:
@@ -176,49 +176,69 @@ def generatePlots(date):
                 generalTrack["dfloadpin"].append(dfloadpin)
                 generalTrack["dftrack"].append(dftrack)
                 generalTrack["dftorque"].append(dftorque)
-                if dfacc is not None:
+                if dfacc is not None and dfacc.empty != True:
                     generalTrack["dfacc"].append(dfacc)
-                if dfbm is not None:
+                if dfbm is not None and dfacc.empty != True:
                     generalTrack["dfbm"].append(dfbm)
                 filename = "Track-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
                 generalTrack["name"] = file+"/"+filename+".html"
+                generalTrack["addText"] = element["addText"]
             if foundType == "Park-in":
                 generalParkin["dfpos"].append(dfpos)
                 generalParkin["dfloadpin"].append(dfloadpin)
                 generalParkin["dftrack"].append(dftrack)
                 generalParkin["dftorque"].append(dftorque)
-                if dfacc is not None:
+                if dfacc is not None and dfacc.empty != True:
                     generalParkin["dfacc"].append(dfacc)
-                if dfbm is not None:
+                if dfbm is not None and dfacc.empty != True:
                     generalParkin["dfbm"].append(dfbm)
-                    filename ="Park-in-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                filename ="Park-in-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
                 generalParkin["name"] = file+"/"+filename+".html"
+                generalParkin["addText"] = element["addText"]
             if foundType == "Park-out":
                 generalParkout["dfpos"].append(dfpos)
                 generalParkout["dfloadpin"].append(dfloadpin)
                 generalParkout["dftrack"].append(dftrack)
                 generalParkout["dftorque"].append(dftorque)
-                if dfacc is not None:
+                if dfacc is not None and dfacc.empty != True:
                     generalParkout["dfacc"].append(dfacc)
-                if dfbm is not None:
+                if dfbm is not None and dfbm.empty != True:
                     generalParkout["dfbm"].append(dfbm)
                 filename = "Park-out-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
                 generalParkout["name"] = file+"/"+filename+".html"
+                generalParkout["addText"] = element["addText"]
             if foundType == "GoToPos":
                 generalGotopos["dfpos"].append(dfpos)
                 generalGotopos["dfloadpin"].append(dfloadpin)
                 generalGotopos["dftrack"].append(dftrack)
                 generalGotopos["dftorque"].append(dftorque)
-                if dfacc is not None:
+                if dfacc is not None and dfacc.empty != True:
                     generalGotopos["dfacc"].append(dfacc)
-                if dfbm is not None:
+                if dfbm is not None and dfacc.empty != True:
                     generalGotopos["dfbm"].append(dfbm)
                 filename = "GoToPos-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
                 generalGotopos["name"] = file+"/"+filename+".html"
-        figuresFunctions.FigureTrack(generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
-        figuresFunctions.FigureTrack(generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
-        figuresFunctions.FigureTrack(generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
-        figuresFunctions.FigureTrack(generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
+                generalGotopos["addText"] = element["addText"]
+        figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+        figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+        figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+        figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
+        if len(generalTrack["dfacc"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
+        if len(generalParkin["dfacc"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
+        if len(generalParkout["dfacc"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
+        if len(generalGotopos["dfacc"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+        """ if len(generalTrack["dfbm"]) != 0:
+            figuresFunctions.FigureRADec(generalTrack["dfbm"], generalTrack["name"])
+        if len(generalParkin["dfbm"]) != 0:
+            figuresFunctions.FigureRADec(generalParkin["dfbm"], generalParkin["name"])
+        if len(generalParkout["dfbm"]) != 0:
+            figuresFunctions.FigureRADec(generalParkout["dfbm"], generalParkout["name"])
+        if len(generalGotopos["dfbm"]) != 0:
+            figuresFunctions.FigureRADec(generalGotopos["dfbm"], generalGotopos["name"]) """
         
 
         #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)

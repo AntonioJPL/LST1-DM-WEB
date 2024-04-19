@@ -104,7 +104,6 @@ class MongoDb:
             plot = {}
             plot["type"] = element["name"]
             foundElement = list(self.dbname["Data"].aggregate([{"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
-            print(foundElement)
             file = foundElement[0]["file"].split("/")
             filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
             file = finders.find(file[0]+"/"+file[1]+"/"+file[2])

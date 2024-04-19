@@ -16,7 +16,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, solar_system_eph
 import plotly.graph_objects as go
 import plotly.io as pio
 
-def FigureTrack(dfpos,dfloadpin,dftrack,dftorque, path):
+def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     fig = go.Figure()
     for i in range(0, len(dfpos)):
         if dfloadpin[i] is not None:
@@ -24,31 +24,31 @@ def FigureTrack(dfpos,dfloadpin,dftrack,dftorque, path):
             mask207 = dfloadpin[i]['LoadPin']==207
             loadPinSorted = dfloadpin[i].sort_values(by=["T"])
             if i == 0:
-                fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107"))
-                fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207"))
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", mode="lines"))
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", mode="lines"))
             else:
-                fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", showlegend=False))
-                fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", showlegend=False))
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", showlegend=False, mode="lines"))
 
 
 
         dfposSorted = dfpos[i].sort_values(by=["T"])
         if i == 0:
-            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth"))
-            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle"))
+            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth", mode="lines"))
+            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle", mode="lines"))
         else:
-            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth", showlegend=False))
-            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle", showlegend=False))
+            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth", showlegend=False, mode="lines"))
+            fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle", showlegend=False, mode="lines"))
 
         dftrackSorted = None
         if dftrack is not None:
             dftrackSorted = dftrack[i].sort_values(by=["T"])
             if i == 0:
-                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th."))
-                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th."))
+                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", mode="lines"))
+                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", mode="lines"))
             else:
-                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", showlegend=False))
-                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", showlegend=False))
+                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", showlegend=False, mode="lines"))
 
 
             
@@ -56,27 +56,32 @@ def FigureTrack(dfpos,dfloadpin,dftrack,dftorque, path):
         #title="My plot title",
         xaxis_tickformat = "%H:%M:%S",
         yaxis= dict(
+            dtick=50,
             title="Load [KG]",
             titlefont=dict(
                 color='blue'
             ),
             tickfont=dict(
-                color='blue'
+                color='blue', 
+                size=10
             ),
         ),
         yaxis2= dict(
+            dtick=25,
             title="Azimuth [DEG]",
             titlefont=dict(
                 color='red'
             ),
             tickfont=dict(
-                color='red'
+                color='red',
+                size=10
             ),
             anchor="x",
             overlaying="y",
             side="right"
         ),
         yaxis3= dict(
+            dtick=5,
             title="Zenith Angle [DEG]",
             titlefont=dict(
                 color='black'
@@ -100,28 +105,39 @@ def FigureTrack(dfpos,dfloadpin,dftrack,dftorque, path):
             x=0.5,
         ),
     )
-    figImg = go.Figure(fig)
+    #figImg = go.Figure(fig)
     fig.write_html(path)
     #pio.write_image(figImg, path.replace(".html", ".png").replace("html", "img"), width=1080, height=720)
-
+    startTime = None
+    endTime = None
     fig2 = go.Figure()
     if dftorque is not None:
         for i in range(0, len(dftorque)):
             torqueSorted = dftorque[i].sort_values(by=["T"])
             if i == 0:
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW"))
+                startTime = torqueSorted['T'][0]
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=list({0: torqueSorted["T"][0]}), line= dict(color="rgba(0,0,0,0)"), name=addText)) #This is for the legend title
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", mode="lines"))
+            if i == len(dftorque)-1:
+                endTime = torqueSorted['T'][len(torqueSorted['T'])-1]
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
             else:
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
+                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
 
 
 
@@ -129,18 +145,21 @@ def FigureTrack(dfpos,dfloadpin,dftrack,dftorque, path):
         #title="My second interactive plot",
         xaxis_tickformat = "%H:%M:%S",
         xaxis= dict(
-            title="Time"
+            title="Time",
+            range=[startTime, endTime]
         ),
         yaxis= dict(
+            dtick=10,
             title="Torque [N.m]",
             titlefont=dict(
                 color='black'
             ),
             tickfont=dict(
-                color='black'
+                color='black', 
+                size=10
             ),
         ),
-        legend= dict( 
+        legend= dict(
             orientation="h",
             yanchor="middle",
             y=1.2,
@@ -148,42 +167,95 @@ def FigureTrack(dfpos,dfloadpin,dftrack,dftorque, path):
             x=0.5,
         ),
     )
-    figImg2 = go.Figure(fig2)
+    #figImg2 = go.Figure(fig2)
     fig2.write_html(path.replace(".html", "-torque.html"))
     #pio.write_image(figImg2, path.replace(".html", "-torque.png").replace("html", "img"), width=1080, height=720)
     
 #Used in GenerateFig
-def FigAccuracyTime(addtext,dfacc, path):
+def FigAccuracyTime(dfacc, path):
     #TODO - https://community.plotly.com/t/fill-area-between-2-lines-solved/42865/3 Try if you can specify the Y axis number to have a "Zone" to fill.
-    figname2 = "/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/img/generatedFig.png".replace(".png","_Diff.png")
     #addhtmlfile(fichierhtml,figname2)
-    fig,hostd = plt.subplots(figsize = (25, 12))
-    plt.gcf().subplots_adjust(left = 0.1, bottom = 0.1,right = 0.9, top = 0.9, wspace = 0.1, hspace = 0.1)
+    fig = go.Figure()
+    if dfacc is not None:
+        minuteDict = {}
+        minuteDict["times"] = {}
+        minuteDict["values"] = {}
+        minuteDict["type"] = {}
+        minuteDict["values"][0] = -60
+        minuteDict["type"][0] = 0
+        minuteDict["times"][0] = dfacc[0]["T"][0]
+        minuteDict["values"][1] = -60
+        minuteDict["type"][1] = 0
+        minuteDict["times"][1] = dfacc[-1]["T"][len(dfacc[-1]["T"])-1]
+        minuteDict["values"][2] = 60
+        minuteDict["type"][2] = 1
+        minuteDict["times"][2] = dfacc[0]["T"][0]
+        minuteDict["values"][3] = 60
+        minuteDict["type"][3] = 1
+        minuteDict["times"][3] = dfacc[-1]["T"][len(dfacc[-1]["T"])-1]
+        dfMin = pd.DataFrame.from_dict(minuteDict)
+        mask1 = dfMin["type"]==1
+        mask0 = dfMin["type"]==0
+        seccondsDict = {}
+        seccondsDict["times"] = {}
+        seccondsDict["values"] = {}
+        seccondsDict["type"] = {}
+        seccondsDict["values"][0] = -14
+        seccondsDict["type"][0] = 0
+        seccondsDict["times"][0] = dfacc[0]["T"][0]
+        seccondsDict["values"][1] = -14
+        seccondsDict["type"][1] = 0
+        seccondsDict["times"][1] = dfacc[-1]["T"][len(dfacc[-1]["T"])-1]
+        seccondsDict["values"][2] = 14
+        seccondsDict["type"][2] = 1
+        seccondsDict["times"][2] = dfacc[0]["T"][0]
+        seccondsDict["values"][3] = 14
+        seccondsDict["type"][3] = 1
+        seccondsDict["times"][3] = dfacc[-1]["T"][len(dfacc[-1]["T"])-1]
+        dfSec = pd.DataFrame.from_dict(seccondsDict)
+        mask1Sec = dfSec["type"]==1
+        mask0Sec = dfSec["type"]==0
+        fig.add_trace(go.Scatter(x=dfMin[mask0]["times"], y=dfMin[mask0]["values"], line= dict(color="palegreen"), name="1' req", legendgroup="1' req", fill="tonexty", fillcolor="palegreen", mode="lines"))
+        fig.add_trace(go.Scatter(x=dfMin[mask1]["times"], y=dfMin[mask1]["values"], line= dict(color="palegreen"), name="1' req", legendgroup="1' req", fill="tonexty", fillcolor="palegreen", showlegend=False, mode="lines"))
+        fig.add_trace(go.Scatter(x=dfSec[mask0Sec]["times"], y=dfSec[mask0Sec]["values"], line= dict(color="limegreen"), name="14'' req", legendgroup="14' req", fill="tozeroy", fillcolor="limegreen", mode="lines"))
+        fig.add_trace(go.Scatter(x=dfSec[mask1Sec]["times"], y=dfSec[mask1Sec]["values"], line= dict(color="limegreen"), name="14'' req", legendgroup="14' req", fill="tozeroy", fillcolor="limegreen", showlegend=False, mode="lines"))
+        fig.add_trace(go.Scatter(x=dfSec[mask1Sec]["times"], y=[0 for x in dfSec[mask1Sec]["times"]], line= dict(color="black", dash="dash", width=0.5), name="0 req", legendgroup="0 req", mode="lines",)) #It kinda make the plot harder to read, maybe with opacity=0.25 would better
+        for i in range(0, len(dfacc)):
+            if i == 0:
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Azmin"], line= dict(color=("rgba(0,0,0,0)")), name="Azimuth", legendgroup="Azimuth", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Azmax"], line= dict(color=("rgba(0,0,0,0)")), name="Azimuth", legendgroup="Azimuth", fill="tonexty", fillcolor="rgba(0,0,255,0.5)", mode="lines"))
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Zdmin"], line= dict(color=("rgba(0,0,0,0)")), name="Zenith angle", legendgroup="Zenith angle", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Zdmax"], line= dict(color=("rgba(0,0,0,0)")), name="Zenith angle", legendgroup="Zenith angle", fill="tonexty", fillcolor="rgba(255,0,0,0.5)", mode="lines"))
+            else:
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Azmin"], line= dict(color=("rgba(0,0,0,0)")), name="Azimuth", legendgroup="Azimuth", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Azmax"], line= dict(color=("rgba(0,0,0,0)")), name="Azimuth", legendgroup="Azimuth", fill="tonexty", fillcolor="rgba(0,0,255,0.5)", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Zdmin"], line= dict(color=("rgba(0,0,0,0)")), name="Zenith angle", legendgroup="Zenith angle", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Zdmax"], line= dict(color=("rgba(0,0,0,0)")), name="Zenith angle", legendgroup="Zenith angle", fill="tonexty", fillcolor="rgba(255,0,0,0.5)", showlegend=False, mode="lines"))
 
-    #spec = gridspec.GridSpec(ncols=1, nrows=1,width_ratios=[4,1])
-    #hostd = fig.add_subplot(0)
-
-    formatter = mdates.DateFormatter("%H:%M:%S") ; 
-    formatter.set_tzinfo(pytz.utc); 
-    plt.gca().xaxis.set_major_formatter(formatter)
-
-    pfill = plt.fill_between(dfacc['T'],-60.,60., color='palegreen',label="1' req.")
-    pfill2 = plt.fill_between(dfacc['T'],-14.,14., color='limegreen',label="14'' req.")
-
-    p1d = hostd.fill_between(dfacc['T'],dfacc['Azmax'],dfacc['Azmin'],facecolor='blue',alpha=0.5,label='Azimuth')
-    p1bd = hostd.fill_between(dfacc['T'],dfacc['Zdmax'],dfacc['Zdmin'],facecolor='red',alpha=0.5,label='Zenith angle')
-
-    hostd.set_ylabel("Pointing Error [arcsec]", fontsize=15)
-
-    lines = [p1d,p1bd]
-
-    hostd.axhline(y=0,xmin=0.05,xmax=0.95,linestyle='dotted')
-    lines = [p1d,p1bd,pfill,pfill2]
-    hostd.legend(lines, [l.get_label() for l in lines],fontsize=13,title=addtext)
-    hostd.set_title(figname2, fontsize=15)    
-    plt.legend()
-    plt.savefig(figname2, bbox_inches='tight')
-    plt.close()
+        fig.update_layout(
+            #title="My plot title",
+            xaxis_tickformat = "%H:%M:%S",
+            yaxis= dict(
+                range=[-100, 100],
+                #dtick = 100,
+                title="Pointing Error [arcsec]",
+                titlefont=dict(
+                    color='black'
+                ),
+                tickfont=dict(
+                    color='black',
+                    size=10
+                ),
+            ),
+            legend= dict( 
+                orientation="h",
+                yanchor="middle",
+                y=1.2,
+                xanchor="center",
+                x=0.5,
+            )
+        )
+        fig.write_html(path.replace(".html", "-accuracy.html"))
 
 def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):  
     figname3 = f"/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/img/generatedFig.png".replace(".png","_SkyCoord.png")

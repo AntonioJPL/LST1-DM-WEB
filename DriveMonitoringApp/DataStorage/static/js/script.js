@@ -45,13 +45,15 @@ let selectedFilters = {}
 let generalData = {}
 
 const fetchLatestData = async() => {
-    let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
+    let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({date: "2024-02-02"})})
     .then(response => response.json())
     generalData = await fetch("http://127.0.0.1:8000/storage/getData")
     .then(response => response.json())
     showAllData(generalData.data)
     data = serverRes.data
+    console.log(data)
     filters = serverRes.filters
+    console.log(filters)
     summaryData = data.filter(element => element.LogStatus != null)
     startSummary()
     loadFilters()

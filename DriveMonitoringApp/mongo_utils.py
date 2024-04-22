@@ -78,22 +78,32 @@ class MongoDb:
         return HttpResponse("Deleting an objecth with the indicated id")
 
     def listLogs(self, date):
-        #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !!
-        data = list(self.collection_logs.find().sort({"Stime": -1}).sort({"Sdate": +1}))
-        logs = list(self.dbname["LogStatus"].find())
-        commands = list(self.dbname["Commands"].find())
-        comStatus = list(self.dbname["CommandStatus"].find())
-        for element in data:
-            element["_id"] = str(element["_id"])
-            if element["LogStatus"] is not None:
-                element["LogStatus"] = [searchedElement["name"] for searchedElement in logs if searchedElement["_id"] == ObjectId(element["LogStatus"])]
-                element["LogStatus"] = element["LogStatus"][0]
-            element["Command"] = [searchedElement["name"] for searchedElement in commands if searchedElement["_id"] == ObjectId(element["Command"])]
-            element["Command"] = element["Command"][0]
-            if element["Status"] is not None:
-                element["Status"] = [searchedElement["name"] for searchedElement in comStatus if searchedElement["_id"] == ObjectId(element["Status"])]
-                element["Status"] = element["Status"][0]
-        return data
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) == 1:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            end = datetime.fromtimestamp(operation[0]["Tmax"])
+            end = str(end).split(" ")
+            data = list(self.dbname["Logs"].aggregate([{"$match":{"$or": [{"$and": [{"Date": start[0]}, {"Time": {"$gte": start[1]}}]}, {"$and": [{"Date": end[0]},{"Time": {"$lte": end[1]}}]}]}}]))
+            logs = list(self.dbname["LogStatus"].find())
+            commands = list(self.dbname["Commands"].find())
+            comStatus = list(self.dbname["CommandStatus"].find())
+            for element in data:
+                element["_id"] = str(element["_id"])
+                if element["LogStatus"] is not None:
+                    element["LogStatus"] = [searchedElement["name"] for searchedElement in logs if searchedElement["_id"] == ObjectId(element["LogStatus"])]
+                    element["LogStatus"] = element["LogStatus"][0]
+                element["Command"] = [searchedElement["name"] for searchedElement in commands if searchedElement["_id"] == ObjectId(element["Command"])]
+                element["Command"] = element["Command"][0]
+                if element["Status"] is not None:
+                    element["Status"] = [searchedElement["name"] for searchedElement in comStatus if searchedElement["_id"] == ObjectId(element["Status"])]
+                    element["Status"] = element["Status"][0]
+            return data
+        if len(operation) == 0: 
+            return JsonResponse({"Message": "There is no data to show"})
+        if len(operation) > 1:
+            return JsonResponse({"Message": "There is more than one operation in this date"})
+
     def listData(self, date):
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
         types = list(self.dbname["Types"].find())
@@ -152,11 +162,12 @@ class MongoDb:
                      
         try:
             self.dbname["Logs"].insert_many(data)
-            if self.dbname["Operations"].find(operation) == None:
+            print("Find result")
+            print(len(list(self.dbname["Operations"].find(operation))) == 0)
+            if len(list(self.dbname["Operations"].find(operation))) == 0:
                 self.dbname["Operations"].insert_one(operation)
-            return True
         except Exception:
-            return False
+            print(Exception.with_traceback())
     def storeGeneralData(self, data):
         typeId = self.dbname["Types"].find_one({"name": data["type"]}, {"name": 0})
         data["type"] = str(typeId["_id"])
@@ -339,10 +350,18 @@ class MongoDb:
         newDay = str(newDay)
         result = dateParts[0]+"-"+dateParts[1]+"-"+newDay.zfill(2)
         return result
-    def getFilters(self):
+    def getFilters(self, date):
+        if(date == None):
+            date == self.getLatestDate(self)
         response = {}
         response["types"] = self.dbname["Types"].distinct("name")
-        response["dates"] = self.dbname["Logs"].distinct("Date")
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) == 1:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            end = datetime.fromtimestamp(operation[0]["Tmax"])
+            end = str(end).split(" ")
+        response["dates"] = [start[0], end[0]]
         times = {}
         for date in response["dates"]:
             times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})

@@ -255,93 +255,48 @@ def FigAccuracyTime(dfacc, path):
                 x=0.5,
             )
         )
-        fig.write_html(path.replace(".html", "-accuracy.html"))
+        fig.write_html(path.replace(".html", "_Diff.html"))
 
 def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):  
-    figname3 = f"/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/img/generatedFig.png".replace(".png","_SkyCoord.png")
+    fig1 = go.Figure()
+    for i in range(0, 1):
+        dfpos[i]['AzSky'] = dfpos[i]['Az']+dfbm[i]['AzC']
+        dfpos[i]['ZASky'] = dfpos[i]['ZA']+dfbm[i]['ZAC']
+        dfpos[i]['AltSky'] = 90.- dfpos[i]['ZASky']
+        #print(dftrack)
+        #print(dfbm)
+        
+        tracksky = None
+        if dftrack is not None:
+            tracksky = pd.merge(dftrack[i], dfbm[i], on="T",how='inner')
+            tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
+            tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']
+            tracksky['AltSky'] = 90.- tracksky['ZASky']
 
-    dfpos['AzSky'] = dfpos['Az']+dfbm['AzC']
-    dfpos['ZASky'] = dfpos['ZA']+dfbm['ZAC']
-    dfpos['AltSky'] = 90.- dfpos['ZASky']
+        lst=EarthLocation.from_geodetic(-17.8915 * u.deg, 28.7615 * u.deg, 2202* u.m)
+        #print(dfpos)
+        direc_lst = AltAz(location=lst, obstime=dfpos[i]['T'],az=dfpos[i]['AzSky'] * u.deg, alt=dfpos[i]['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
+        sky_lst = SkyCoord(direc_lst.transform_to(ICRS()))
+        target = SkyCoord(ra=ra[i]*u.deg,dec=dec[i]*u.deg, frame='icrs')
+        distsky = target.separation(sky_lst)
 
-    #print(dftrack)
-    #print(dfbm)
-    
-    tracksky = None
-    if dftrack is not None:
-        tracksky = pd.merge(dftrack, dfbm, on="T",how='inner')
-        tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
-        tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']
-        tracksky['AltSky'] = 90.- tracksky['ZASky']
-    #print(tracksky)
+        if tracksky is not None:
+            direc_lst_track = AltAz(location=lst, obstime=tracksky['Tth'],az=tracksky['AzSky'] * u.deg, alt=tracksky['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
+            sky_lst_track = SkyCoord(direc_lst_track.transform_to(ICRS()))
+            target_track = SkyCoord(ra=ra[i]*u.deg,dec=dec[i]*u.deg, frame='icrs')
+            distsky_track = target.separation(sky_lst_track)
 
-    lst=EarthLocation.from_geodetic(-17.8915 * u.deg, 28.7615 * u.deg, 2202* u.m)
-    #print(dfpos)
-    direc_lst = AltAz(location=lst, obstime=dfpos['T'],az=dfpos['AzSky'] * u.deg, alt=dfpos['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
-    sky_lst = SkyCoord(direc_lst.transform_to(ICRS()))
-    target = SkyCoord(ra=ra*u.deg,dec=dec*u.deg, frame='icrs')
-    distsky = target.separation(sky_lst)
+        #addhtmlfile(fichierhtml,figname3)
 
-    if tracksky is not None:
-        direc_lst_track = AltAz(location=lst, obstime=tracksky['Tth'],az=tracksky['AzSky'] * u.deg, alt=tracksky['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
-        sky_lst_track = SkyCoord(direc_lst_track.transform_to(ICRS()))
-        target_track = SkyCoord(ra=ra*u.deg,dec=dec*u.deg, frame='icrs')
-        distsky_track = target.separation(sky_lst_track)
-
-    #addhtmlfile(fichierhtml,figname3)
-
-    #Here it starts to generate the Plot
-    fig = plt.figure(figsize = (20, 12))
-    plt.gcf().subplots_adjust(left = 0.1, bottom = 0.15,right = 0.9, top = 0.85, wspace = 0.1, hspace = 0.1)
-
-    spec = gridspec.GridSpec(ncols=2, nrows=2)
-
-    hostd = fig.add_subplot(spec[0])
-    if tracksky is not None:
-        plt.hist(sky_lst_track.ra.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-    plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
-    plt.axvline(x=ra, color='k', linestyle='--',label="Target")
-    hostd.set_xlabel("RA[deg]", fontsize=15)
-    #hostd.set_title(figname3, fontsize=15)    
-    hostd.legend()
-
-    hostd = fig.add_subplot(spec[1])
-    if tracksky is not None:
-        plt.hist(sky_lst_track.dec.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-    plt.hist(sky_lst.dec.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
-    plt.axvline(x=dec, color='k', linestyle='--',label="Target")
-    hostd.set_xlabel("Declination[deg]", fontsize=15)
-    #hostd.set_title(figname3, fontsize=15)    
-    hostd.legend()
-
-    hostd = fig.add_subplot(spec[2])
-    if tracksky is not None:
-        log10distsky_track = np.log10(distsky_track.deg*3600.)
-        plt.hist(log10distsky_track,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-    log10distsky = np.log10(distsky.deg*3600.)
-    plt.hist(log10distsky,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
-    for i in range(1,10):
-        plt.axvline(x=math.log10(i), color='red', linestyle='--')
-        plt.axvline(x=math.log10(i*10), color='blue', linestyle='--')
-        plt.axvline(x=math.log10(i*100), color='k', linestyle='--')
-
-    hostd.set_xlabel("Log10 Angular Distance to Target[arcsec]", fontsize=15)
-    #hostd.set_title(figname3, fontsize=15)    
-    hostd.legend()
-
-    hostd = fig.add_subplot(spec[3])
-    azmaxacc = np.log10(np.maximum(np.abs(dfacc.Azmax),np.abs(dfacc.Azmin)))
-    zdmaxacc = np.log10(np.maximum(np.abs(dfacc.Zdmax),np.abs(dfacc.Zdmin)))
-
-    plt.hist(np.log10(np.abs(dfacc.Azmean)),bins=30,histtype='step',density=True,label='Azimuth 2s average', alpha=0.7,linewidth=3)
-    plt.hist(azmaxacc,bins=30,histtype='step', density=True,label='Azimuth 2s max', alpha=0.7,linewidth=3)
-    plt.hist(np.log10(np.abs(dfacc.Zdmean)),bins=30,histtype='step',density=True,label='Elevation 2s average', alpha=0.7,linewidth=3)
-    plt.hist(zdmaxacc,bins=30,histtype='step', density=True,label='Elevation 2s max', alpha=0.7,linewidth=3)
-    plt.axvline(x=math.log10(30.), color='k', linestyle='--',label="30\"")
-    plt.axvline(x=math.log10(4.e-02), color='red', linestyle='--',label="Encoder resolution")
-    hostd.set_xlabel('log$_{10}$(Accuracy [arcsec])',fontsize=15)
-    hostd.legend()
-
-    plt.savefig(figname3, bbox_inches='tight')
-    #plt.show()
-    plt.close()
+        #Here it starts to generate the Plot
+        if tracksky is not None:
+            print()
+            fig1.add_trace(go.Histogram(x=sky_lst_track.ra.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), xaxis="x2", yaxis="y2"))   
+        fig1.add_trace(go.Histogram(x=sky_lst.ra.deg, opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing", marker= dict(color="orange"), xaxis="x1", yaxis="y1"))
+        #fig1.add_trace(go.Scatter(x=sky_lst_track.dec.deg, y=list(range(0,40)), opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing"))
+        fig1.add_vline(x=ra[i], line=dict(color="black", dash="dash"), name="Target", legendgroup="Target")
+        fig1.update_layout(
+            xaxis = dict(dtick=0.025),
+        )
+        
+    fig1.show()

@@ -433,7 +433,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
         #FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
     #print(dfacc)
     data = []
-    data.append(dataLine)  
+    data.append(dataLine)
     req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
 
         
@@ -581,14 +581,16 @@ def FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack):
 
         hostd = fig.add_subplot(spec[0])
         if tracksky is not None:
+            print(sky_lst_track)
             plt.hist(sky_lst_track.ra.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-        plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
+        print(sky_lst)
+        #plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
         plt.axvline(x=ra, color='k', linestyle='--',label="Target")
         hostd.set_xlabel("RA[deg]", fontsize=15)
         #hostd.set_title(figname3, fontsize=15)    
         hostd.legend()
 
-        hostd = fig.add_subplot(spec[1])
+        """ hostd = fig.add_subplot(spec[1])
         if tracksky is not None:
             plt.hist(sky_lst_track.dec.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
         plt.hist(sky_lst.dec.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
@@ -624,8 +626,8 @@ def FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack):
         plt.axvline(x=math.log10(4.e-02), color='red', linestyle='--',label="Encoder resolution")
         hostd.set_xlabel('log$_{10}$(Accuracy [arcsec])',fontsize=15)
         hostd.legend()
-
-        plt.savefig(figname3, bbox_inches='tight')
+ """
+        plt.savefig("/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/prueba/test.png")
         #plt.show()
         plt.close()
 
@@ -1109,7 +1111,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
     endhtmlfile(generallogsorted)
 
-    if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+    """  if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
     	if path.exists(dirname)==False :
              os.mkdir(dirname)
              
@@ -1149,7 +1151,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
             #print(generalData)
             
-            #print(req.json()["Message"])
+            #print(req.json()["Message"]) """
 
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))

@@ -1107,7 +1107,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     print(datetime.now().strftime("%H:%M:%S"))
     req = requests.get("http://127.0.0.1:8000/storage/storeData")
     print(req.json()["Message"])
-    generallogsorted.hola
+    #generallogsorted.hola #Loop-break
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
     #endhtmlfile(generallogsorted)

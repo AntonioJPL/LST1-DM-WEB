@@ -267,7 +267,7 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
         #print(dfbm)
         
         tracksky = None
-        if dftrack is not None and dftrack.empty != True:
+        if dftrack is not None:
             tracksky = pd.merge(dftrack[i], dfbm[i], on="T",how='inner')
             tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
             tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']
@@ -290,13 +290,14 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
 
         #Here it starts to generate the Plot
         if tracksky is not None:
-            print()
-            fig1.add_trace(go.Histogram(x=sky_lst_track.ra.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), xaxis="x2", yaxis="y2"))   
-        fig1.add_trace(go.Histogram(x=sky_lst.ra.deg, opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing", marker= dict(color="orange"), xaxis="x1", yaxis="y1"))
+            print(sky_lst_track.ra.deg)
+            fig1.add_trace(go.Histogram(x=sky_lst_track.ra.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), alignmentgroup=1))   
+        fig1.add_trace(go.Histogram(x=sky_lst.ra.deg, opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing", marker= dict(color="orange"), xbins=dict(size= 0.025), alignmentgroup=1))
         #fig1.add_trace(go.Scatter(x=sky_lst_track.dec.deg, y=list(range(0,40)), opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing"))
         fig1.add_vline(x=ra[i], line=dict(color="black", dash="dash"), name="Target", legendgroup="Target")
         fig1.update_layout(
             xaxis = dict(dtick=0.025),
+            xaxis_title="RA[deg]"
         )
         
     fig1.show()

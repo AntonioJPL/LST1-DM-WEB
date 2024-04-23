@@ -19,7 +19,7 @@ import plotly.io as pio
 def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     fig = go.Figure()
     for i in range(0, len(dfpos)):
-        if dfloadpin[i] is not None:
+        if dfloadpin[i] is not None and dfloadpin[i].empty != True:
             mask107 = dfloadpin[i]['LoadPin']==107
             mask207 = dfloadpin[i]['LoadPin']==207
             loadPinSorted = dfloadpin[i].sort_values(by=["T"])
@@ -114,30 +114,31 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     if dftorque is not None:
         for i in range(0, len(dftorque)):
             torqueSorted = dftorque[i].sort_values(by=["T"])
-            if i == 0:
-                startTime = torqueSorted['T'][0]
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=list({0: torqueSorted["T"][0]}), line= dict(color="rgba(0,0,0,0)"), name=addText)) #This is for the legend title
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", mode="lines"))
-            if i == len(dftorque)-1:
-                endTime = torqueSorted['T'][len(torqueSorted['T'])-1]
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
-            else:
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
-                fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
+            if torqueSorted.empty != True:
+                if i == 0:
+                    startTime = torqueSorted['T'][0]
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=list({0: torqueSorted["T"][0]}), line= dict(color="rgba(0,0,0,0)"), name=addText)) #This is for the legend title
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", mode="lines"))
+                if i == len(dftorque)-1:
+                    endTime = torqueSorted['T'][len(torqueSorted['T'])-1]
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
+                else:
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
+                    fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
 
 
 
@@ -173,7 +174,6 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     
 #Used in GenerateFig
 def FigAccuracyTime(dfacc, path):
-    #TODO - https://community.plotly.com/t/fill-area-between-2-lines-solved/42865/3 Try if you can specify the Y axis number to have a "Zone" to fill.
     #addhtmlfile(fichierhtml,figname2)
     fig = go.Figure()
     if dfacc is not None:
@@ -267,7 +267,7 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
         #print(dfbm)
         
         tracksky = None
-        if dftrack is not None:
+        if dftrack is not None and dftrack.empty != True:
             tracksky = pd.merge(dftrack[i], dfbm[i], on="T",how='inner')
             tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
             tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']

@@ -93,6 +93,8 @@ def storeData(request):
             return JsonResponse({"Message": "The data has been stored successfully."})
         else:
             return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
+    else:
+        generatePlots(database.getLatestDate(database))
 #TEST
 def update(request):
     return database.updateData(database)
@@ -116,7 +118,7 @@ def home(request):
 def getLogs(request):
     if request.method == "GET":
         if database.isData(database) == True:
-            data = {"data": database.listLogs(database, database.getLatestDate(database)), "filters": database.getFilters(database)}
+            data = {"data": database.listLogs(database, database.getLatestDate(database)), "filters": database.getFilters(database, database.getLatestDate(database))}
             return JsonResponse(data)
         else:
             return JsonResponse({"Message": "There is no data to show"})
@@ -128,12 +130,19 @@ def getLogs(request):
                 return JsonResponse(data)
             else:
                 return JsonResponse({"Message": "There is no data to show"})
-
+@csrf_exempt
 #Function that returns the data from the database in case there is.
 def getData(request):
     if request.method == "GET":
         if database.isData(database) == True:
             data = {"data": database.listData(database, database.getLatestDate(database))}
+            return JsonResponse(data)
+        else:
+            return JsonResponse({"Message": "There is no data to show"})
+    else:
+        if database.isData(database) == True:
+            userdict = json.loads(str(request.body,encoding='utf-8'))
+            data = {"data": database.listData(database, userdict["date"])}
             return JsonResponse(data)
         else:
             return JsonResponse({"Message": "There is no data to show"})
@@ -237,26 +246,26 @@ def generatePlots(date):
                 generalGotopos["addText"] = element["addText"]
                 generalGotopos["RA"].append(element["RA"])
                 generalGotopos["DEC"].append(element["DEC"])
-        #figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
-        #figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
-        #figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
-        #figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
-        """  if len(generalTrack["dfacc"]) != 0:
-            #figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
+        figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+        figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+        figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+        figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
+        if len(generalTrack["dfacc"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
         if len(generalParkin["dfacc"]) != 0:
-            #figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
+            figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
         if len(generalParkout["dfacc"]) != 0:
-            #figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
+            figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
         if len(generalGotopos["dfacc"]) != 0:
-            #figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"]) """
-        if len(generalTrack["dfbm"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+        """ if len(generalTrack["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalTrack["dfpos"], generalTrack["dfbm"], generalTrack["RA"], generalTrack["DEC"], generalTrack["dfacc"], generalTrack["dftrack"], generalTrack["name"])
         if len(generalParkin["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalParkin["dfpos"], generalParkin["dfbm"], generalParkin["RA"], generalParkin["DEC"], generalParkin["dfacc"], generalParkin["dftrack"], generalParkin["name"])
         if len(generalParkout["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalParkout["dfpos"], generalParkout["dfbm"], generalParkout["RA"], generalParkout["DEC"], generalParkout["dfacc"], generalParkout["dftrack"], generalParkout["name"])
         if len(generalGotopos["dfbm"]) != 0:
-            figuresFunctions.FigureRADec(generalGotopos["dfpos"], generalGotopos["dfbm"], generalGotopos["RA"], generalGotopos["DEC"], generalGotopos["dfacc"], generalGotopos["dftrack"], generalGotopos["name"])
+            figuresFunctions.FigureRADec(generalGotopos["dfpos"], generalGotopos["dfbm"], generalGotopos["RA"], generalGotopos["DEC"], generalGotopos["dfacc"], generalGotopos["dftrack"], generalGotopos["name"]) """
         
 
         #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
@@ -271,5 +280,5 @@ def generatePlots(date):
 
 def showTestView(request):
     if request.method == "GET":
-        generatePlots("2024-02-01")
+        generatePlots("2024-02-02")
         return render(request, "storage/testPLot.html")

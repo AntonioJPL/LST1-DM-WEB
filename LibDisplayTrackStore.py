@@ -1105,13 +1105,16 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #print(generallogsorted)
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
+    req = requests.get("http://127.0.0.1:8000/storage/storeData")
+    print(req.json()["Message"])
+    generallogsorted.hola
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
     #endhtmlfile(generallogsorted)
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
     endhtmlfile(generallogsorted)
 
-    """  if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+    if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
     	if path.exists(dirname)==False :
              os.mkdir(dirname)
              
@@ -1151,8 +1154,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
             #print(generalData)
             
-            #print(req.json()["Message"]) """
-
+            #print(req.json()["Message"])
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

@@ -100,33 +100,45 @@ class MongoDb:
                     element["Status"] = element["Status"][0]
             return data
         if len(operation) == 0: 
-            return JsonResponse({"Message": "There is no data to show"})
+            return {"Message": "There is no data to show"}
         if len(operation) > 1:
-            return JsonResponse({"Message": "There is more than one operation in this date"})
+            return {"Message": "There is more than one operation in this date"}
 
     def listData(self, date):
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
-        types = list(self.dbname["Types"].find())
-        elements = []
-        endDate = datetime.strptime(date.replace("-", ""), '%Y%m%d')
-        endDate += DT.timedelta(days=1)
-        for element in types:
-            plot = {}
-            plot["type"] = element["name"]
-            foundElement = list(self.dbname["Data"].aggregate([{"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
-            file = foundElement[0]["file"].split("/")
-            filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
-            file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
-            files = glob.glob(file+"/"+filename+"*")
-            plot["file"] = []
-            for i in range(0, len(files)):
-                files[i] = files[i].split("/")
-                #print(files[i])
-                files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
-                plot["file"].append(files[i])
-            plot["data"]=foundElement
-            elements.append(plot)
-        return elements
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) == 1:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            end = datetime.fromtimestamp(operation[0]["Tmax"])
+            end = str(end).split(" ")
+            types = list(self.dbname["Types"].find())
+            elements = []
+            endDate = datetime.strptime(date.replace("-", ""), '%Y%m%d')
+            endDate += DT.timedelta(days=1)
+            for element in types:
+                plot = {}
+                plot["type"] = element["name"]
+                foundElement = list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}, {"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
+                if len(foundElement) > 0:
+                    file = foundElement[0]["file"].split("/")
+                    filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
+                    file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+                    files = glob.glob(file+"/"+filename+"*")
+                    plot["file"] = []
+                    for i in range(0, len(files)):
+                        files[i] = files[i].split("/")
+                        #print(files[i])
+                        files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                        plot["file"].append(files[i])
+                    plot["data"]=foundElement
+                    elements.append(plot)
+            #print(elements)
+            return elements
+        if len(operation) == 0: 
+            return {"Message": "There is no data to show"}
+        if len(operation) > 1:
+            return {"Message": "There is more than one operation in this date"}
     
     def storeLogs(self, data):
         operation = {}
@@ -162,8 +174,8 @@ class MongoDb:
                      
         try:
             self.dbname["Logs"].insert_many(data)
-            print("Find result")
-            print(len(list(self.dbname["Operations"].find(operation))) == 0)
+            #print("Find result")
+            #print(len(list(self.dbname["Operations"].find(operation))) == 0)
             if len(list(self.dbname["Operations"].find(operation))) == 0:
                 self.dbname["Operations"].insert_one(operation)
         except Exception:
@@ -356,17 +368,18 @@ class MongoDb:
         response = {}
         response["types"] = self.dbname["Types"].distinct("name")
         operation = list(self.dbname["Operations"].find({"Date": date}))
+        print(date)
         if len(operation) == 1:
             start = datetime.fromtimestamp(operation[0]["Tmin"])
             start = str(start).split(" ")
             end = datetime.fromtimestamp(operation[0]["Tmax"])
             end = str(end).split(" ")
-        response["dates"] = [start[0], end[0]]
-        times = {}
-        for date in response["dates"]:
-            times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
-        response["times"] = times
-        return response
+            response["dates"] = [start[0], end[0]]
+            times = {}
+            for date in response["dates"]:
+                times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
+            response["times"] = times
+        return response 
     def isData(self):
         return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
     def getFirstData(self):

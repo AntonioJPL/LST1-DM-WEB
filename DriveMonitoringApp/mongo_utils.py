@@ -368,7 +368,6 @@ class MongoDb:
         response = {}
         response["types"] = self.dbname["Types"].distinct("name")
         operation = list(self.dbname["Operations"].find({"Date": date}))
-        print(date)
         if len(operation) == 1:
             start = datetime.fromtimestamp(operation[0]["Tmin"])
             start = str(start).split(" ")
@@ -539,4 +538,6 @@ class MongoDb:
         return list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}]))
     def getOperationTypes(self):
         return list(self.dbname["Types"].find())
-    
+    def checkDates(self, date):
+        print()
+        #self.dbname["Operations"].aggregate([{"$match": {""}}])

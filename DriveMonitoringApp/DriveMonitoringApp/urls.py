@@ -32,6 +32,8 @@ urlpatterns = [
     path('storage/update', Sv.update),
     path('storage/delete', Sv.delete),
     path('storage/start', Sv.start),
+    path('storage/plotGeneration', Sv.generateDatePlots),
+    path('storage/checkUpToDate', Sv.checkUpToDate),
 
 
 

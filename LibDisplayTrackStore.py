@@ -1041,14 +1041,12 @@ def endhtmlfile(logsorted):
             data["Command"] = logsorted[i][1]
             data["Status"] = None
         else:
-            #print(logsorted[i][1].split(" ")[0])
             logParts = logsorted[i][1].split(" ")
             data["Command"] = logParts[0]
             data["Status"] = logParts[1]+" "+logParts[2]
 
         data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
         data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
-    
         logs.append(data)
         data = {}
     #print(logs)
@@ -1063,6 +1061,10 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
 
     generallog.clear()
 
+    firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
+
+    req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
+    
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
     trackcmdinitiale = getDate(filename,"Start Tracking") #Not used?
@@ -1105,8 +1107,6 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #print(generallogsorted)
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
-    req = requests.get("http://127.0.0.1:8000/storage/storeData")
-    print(req.json()["Message"])
     #generallogsorted.hola #Loop-break
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
@@ -1125,7 +1125,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                 os.mkdir(dirname+"/Track")
         print("====== Track =======")
         selectedType = "1"
-        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+        #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
 
     if lastone ==0 :
         if len(parkoutbeg) != 0:
@@ -1133,14 +1133,14 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                     os.mkdir(dirname+"/Parkout")
             print("====== Parkout =======")
             selectedType = "2"
-            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
+            #checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
 
         if len(parkinbeg) != 0:
             if path.exists(dirname+"/Parkin")==False :
                     os.mkdir(dirname+"/Parkin")
             print("====== Parkin =======")
             selectedType = "3"
-            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
+            #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
             #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],2,"ParkIn") 
 
         if len(gotobeg) != 0:
@@ -1148,13 +1148,15 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                     os.mkdir(dirname+"/GoToPos")
             print("====== GoToPos =======")
             selectedType = "4"
-            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+            #checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
     
         #if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
             #print(generalData)
             
             #print(req.json()["Message"])
+    req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+    print(req.json()["Message"])
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

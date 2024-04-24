@@ -15,6 +15,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, solar_system_ephemeris,ICRS
 import plotly.graph_objects as go
 import plotly.io as pio
+from plotly.subplots import make_subplots
 
 def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     fig = go.Figure()
@@ -56,7 +57,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
         #title="My plot title",
         xaxis_tickformat = "%H:%M:%S",
         yaxis= dict(
-            dtick=50,
+            #dtick=50,
             title="Load [KG]",
             titlefont=dict(
                 color='blue'
@@ -67,7 +68,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             ),
         ),
         yaxis2= dict(
-            dtick=25,
+            #dtick=25,
             title="Azimuth [DEG]",
             titlefont=dict(
                 color='red'
@@ -81,7 +82,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             side="right"
         ),
         yaxis3= dict(
-            dtick=5,
+            #dtick=5,
             title="Zenith Angle [DEG]",
             titlefont=dict(
                 color='black'
@@ -105,18 +106,17 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             x=0.5,
         ),
     )
+    fig.update_yaxes(tickangle=15)
     #figImg = go.Figure(fig)
     fig.write_html(path)
     #pio.write_image(figImg, path.replace(".html", ".png").replace("html", "img"), width=1080, height=720)
-    startTime = None
-    endTime = None
     fig2 = go.Figure()
     if dftorque is not None:
         for i in range(0, len(dftorque)):
-            torqueSorted = dftorque[i].sort_values(by=["T"])
-            if torqueSorted.empty != True:
+            if dftorque[i].empty != True:
+                torqueSorted = dftorque[i].sort_values(by=["T"])
+                #print(torqueSorted)
                 if i == 0:
-                    startTime = torqueSorted['T'][0]
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=list({0: torqueSorted["T"][0]}), line= dict(color="rgba(0,0,0,0)"), name=addText)) #This is for the legend title
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", mode="lines"))
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", mode="lines"))
@@ -125,7 +125,6 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", mode="lines"))
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", mode="lines"))
                 if i == len(dftorque)-1:
-                    endTime = torqueSorted['T'][len(torqueSorted['T'])-1]
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", showlegend=False, mode="lines"))
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El2_mean'], line= dict(color="red"), name="El N", legendgroup="El N", showlegend=False, mode="lines"))
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az1_mean'], line= dict(color="lime"), name="Az SE", legendgroup="Az SE", showlegend=False, mode="lines"))
@@ -139,18 +138,16 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az2_mean'], line= dict(color="forestgreen"), name="Az NE", legendgroup="Az NE", showlegend=False, mode="lines"))
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az3_mean'], line= dict(color="cyan"), name="Az NW", legendgroup="Az NW", showlegend=False, mode="lines"))
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['Az4_mean'], line= dict(color="dodgerblue"), name="Az SW", legendgroup="Az SW", showlegend=False, mode="lines"))
-
-
-
+            else:
+                print("There is no data")
     fig2.update_layout(
         #title="My second interactive plot",
         xaxis_tickformat = "%H:%M:%S",
         xaxis= dict(
             title="Time",
-            range=[startTime, endTime]
         ),
         yaxis= dict(
-            dtick=10,
+            #dtick=10,
             title="Torque [N.m]",
             titlefont=dict(
                 color='black'
@@ -168,6 +165,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             x=0.5,
         ),
     )
+    fig2.update_yaxes(tickangle=15)
     #figImg2 = go.Figure(fig2)
     fig2.write_html(path.replace(".html", "-torque.html"))
     #pio.write_image(figImg2, path.replace(".html", "-torque.png").replace("html", "img"), width=1080, height=720)
@@ -255,11 +253,16 @@ def FigAccuracyTime(dfacc, path):
                 x=0.5,
             )
         )
+        fig.update_yaxes(tickangle=15)
         fig.write_html(path.replace(".html", "_Diff.html"))
 
 def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):  
-    fig1 = go.Figure()
+    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
+    fig2 = make_subplots(specs=[[{"secondary_y": True}]])
+    fig3 = make_subplots(specs=[[{"secondary_y": True}]])
+    fig4 = make_subplots(specs=[[{"secondary_y": True}]])
     for i in range(0, 1):
+        i = 0
         dfpos[i]['AzSky'] = dfpos[i]['Az']+dfbm[i]['AzC']
         dfpos[i]['ZASky'] = dfpos[i]['ZA']+dfbm[i]['ZAC']
         dfpos[i]['AltSky'] = 90.- dfpos[i]['ZASky']
@@ -290,14 +293,27 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
 
         #Here it starts to generate the Plot
         if tracksky is not None:
-            print(sky_lst_track.ra.deg)
-            fig1.add_trace(go.Histogram(x=sky_lst_track.ra.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), alignmentgroup=1))   
-        fig1.add_trace(go.Histogram(x=sky_lst.ra.deg, opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing", marker= dict(color="orange"), xbins=dict(size= 0.025), alignmentgroup=1))
-        #fig1.add_trace(go.Scatter(x=sky_lst_track.dec.deg, y=list(range(0,40)), opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing"))
+            fig1.add_trace(go.Histogram(x=sky_lst_track.ra.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), xbins=dict(size= 0.0000005)), secondary_y=True)   
+        fig1.add_trace(go.Histogram(x=sky_lst.ra.deg, opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing", marker= dict(color="orange"), alignmentgroup=1))
         fig1.add_vline(x=ra[i], line=dict(color="black", dash="dash"), name="Target", legendgroup="Target")
         fig1.update_layout(
             xaxis = dict(dtick=0.025),
             xaxis_title="RA[deg]"
         )
-        
-    fig1.show()
+        date = str(dfpos[0]["T"][len(dfpos[0]["T"])-1]).split(" ")
+        time = date[0].split("+")
+        fig1.update_yaxes(tickangle=15)
+        fig1.show()
+        #fig1.write_html(path.replace(".html", "_"+time[0]+"_"+"_SkyCoord1.html"))
+        """ if tracksky is not None:
+            fig2.add_trace(go.Histogram(x=sky_lst_track.dec.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), xbins=dict(size= 0.0000005)), secondary_y=True)   
+        fig2.add_trace(go.Histogram(x=sky_lst.dec.deg, opacity=0.7, name="Telescope pointing", legendgroup="Telescope pointing", marker= dict(color="orange"), alignmentgroup=1))
+        fig2.add_vline(x=ra[i], line=dict(color="black", dash="dash"), name="Target", legendgroup="Target")
+        fig2.update_layout(
+            xaxis = dict(dtick=0.025),
+            xaxis_title="Declination[deg]"
+        )
+        date = str(dfpos[0]["T"][len(dfpos[0]["T"])-1]).split(" ")
+        time = date[0].split("+")
+        fig2.show() """
+        #fig2.write_html(path.replace(".html", "_"+time[0]+"_"+"_SkyCoord2.html"))

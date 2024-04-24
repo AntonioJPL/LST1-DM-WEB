@@ -32,11 +32,12 @@ def storeLogs(request):
     if(request.method == 'POST'):
         userdict = json.loads(str(request.body,encoding='utf-8'))
         dictNewValues = []
-        #print(userdict)
         correct = True
         for item in userdict:
-            if database.checkDuplicatedLogs(database, item["Time"], item["Command"], item["Date"]) == False:
-                dictNewValues.append(item)
+            #print(item)
+            if(item["Command"] != "Drive"):
+                if database.checkDuplicatedLogs(database, item["Time"], item["Command"], item["Date"]) == False:
+                    dictNewValues.append(item)
         #print(dictNewValues)
         if len(dictNewValues) > 0:
             correct = database.storeLogs(database, dictNewValues)
@@ -246,19 +247,22 @@ def generatePlots(date):
                 generalGotopos["addText"] = element["addText"]
                 generalGotopos["RA"].append(element["RA"])
                 generalGotopos["DEC"].append(element["DEC"])
-        """ figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
-        figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
-        figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+        #figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+        #figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+        #figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
         figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
         if len(generalTrack["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
+            print()
+            # figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
         if len(generalParkin["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
+            print()
+            # figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
         if len(generalParkout["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
+            print()
+            # figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
         if len(generalGotopos["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"]) """
-        if len(generalTrack["dfbm"]) != 0:
+            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+        """ if len(generalTrack["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalTrack["dfpos"], generalTrack["dfbm"], generalTrack["RA"], generalTrack["DEC"], generalTrack["dfacc"], generalTrack["dftrack"], generalTrack["name"])
         if len(generalParkin["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalParkin["dfpos"], generalParkin["dfbm"], generalParkin["RA"], generalParkin["DEC"], generalParkin["dfacc"], generalParkin["dftrack"], generalParkin["name"])
@@ -266,7 +270,7 @@ def generatePlots(date):
             figuresFunctions.FigureRADec(generalParkout["dfpos"], generalParkout["dfbm"], generalParkout["RA"], generalParkout["DEC"], generalParkout["dfacc"], generalParkout["dftrack"], generalParkout["name"])
         if len(generalGotopos["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalGotopos["dfpos"], generalGotopos["dfbm"], generalGotopos["RA"], generalGotopos["DEC"], generalGotopos["dfacc"], generalGotopos["dftrack"], generalGotopos["name"])
-        
+         """
 
         #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
         if dfbm is not None:
@@ -282,3 +286,20 @@ def showTestView(request):
     if request.method == "GET":
         generatePlots("2024-02-02")
         return render(request, "storage/testPLot.html")
+    
+@csrf_exempt
+def generateDatePlots(request):
+    if request.method == "POST":
+        userdict = json.loads(str(request.body,encoding='utf-8'))
+        userdict = userdict[0][0]
+        dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
+        generatePlots(dateTime)
+        #generatePlots()
+        return JsonResponse({"Message": "The plots have been generated correctly"})
+@csrf_exempt
+def checkUpToDate(request):
+    if request.method == "POST":
+        userdict = json.loads(str(request.body,encoding='utf-8'))
+        userdict = userdict[0][0]
+        dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
+        return database.checkDates(database, dateTime)

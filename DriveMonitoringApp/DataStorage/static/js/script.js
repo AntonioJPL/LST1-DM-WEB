@@ -9,54 +9,99 @@ const body = document.querySelector("body")
 /**
  * Creation of the Summary/Logs section and the interaction between tabs
  */
-let contenSection = document.querySelector("div.textData")
-contenSection.classList.add("gap-y-3")
-let sumSection = document.createElement("div")
-sumSection.classList.add("w-[66%]", "self-center")
-let divSummary = document.createElement("div")
-divSummary.classList.add("w-[50%]", "bg-[#325D88]", "flex", "justify-center", "items-center", "cursor-pointer", "rounded-tl-lg", "transition", "duration-300", "ease-in-out")
-let summaryLabel = document.createElement("p")
-summaryLabel.classList.add("text-white", "text-xl", "p-2", "pointer-events-none", "select-none")
-summaryLabel.appendChild(document.createTextNode("Summary"))
-divSummary.appendChild(summaryLabel)
-let divLogs = document.createElement("div")
-divLogs.classList.add("w-[50%]", "bg-[#6585a6]", "flex", "justify-center", "items-center", "cursor-pointer", "rounded-tr-lg", "transition", "duration-300", "ease-in-out")
-let logsLabel = document.createElement("p")
-logsLabel.classList.add("text-white", "text-xl", "p-2", "pointer-events-none", "select-none", "transition", "duration-300", "ease-in-out")
-logsLabel.appendChild(document.createTextNode("Logs"))
-divLogs.appendChild(logsLabel)
-let divButtons = document.createElement("div")
-divButtons.classList.add("flex", "w-full", "rounded-t-xl")
-divButtons.appendChild(divSummary)
-divButtons.appendChild(divLogs)
-let divContent = document.createElement("div")
-divContent.classList.add("flex", "flex-col", "w-full", "border", "border-x-[0.25rem]", "border-b-[0.25rem]", "border-[#325D88]", "overflow-y-scroll", "transition", "duration-300", "ease-in-out", "h-[20rem]", "py-1", "rounded-b-lg")
-sumSection.appendChild(divButtons)
-sumSection.appendChild(divContent)
-contenSection.appendChild(sumSection)
-
-/**
- * Function to fetch the data from mongodb
- */
+let contenSection = null
+let divSummary = null
+let divContent = null
+let divLogs = null
+let sumSection = null
+let summaryLabel = null
+let logsLabel = null
+let divButtons = null
 let data = null;
 let filters = null;
 let summaryData = null
 let selectedFilters = {}
 let generalData = {}
-fetch("http://127.0.0.1:8000/storage/getPlot")
+let sectionBody = null
+let filtersCard = null
+let filtersSection = null
+let sectionTitle = null
+const logsData = []
+const summaryParsedData = []
 
-const fetchLatestData = async() => {
-    let serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
-    .then(response => response.json())
-    generalData = await fetch("http://127.0.0.1:8000/storage/getData")
-    .then(response => response.json())
-    showAllData(generalData.data)
-    data = serverRes.data
-    filters = serverRes.filters
-    summaryData = data.filter(element => element.LogStatus != null)
-    startSummary()
-    loadFilters()
-    fillLogs()
+const generateStructure = ()=>{
+    contenSection = document.querySelector("div.textData")
+    contenSection.innerHTML = ""
+    contenSection.classList.add("gap-y-3")
+    sumSection = document.createElement("div")
+    sumSection.classList.add("w-[66%]", "self-center")
+    divSummary = document.createElement("div")
+    divSummary.classList.add("w-[50%]", "bg-[#325D88]", "flex", "justify-center", "items-center", "cursor-pointer", "rounded-tl-lg", "transition", "duration-300", "ease-in-out")
+    summaryLabel = document.createElement("p")
+    summaryLabel.classList.add("text-white", "text-xl", "p-2", "pointer-events-none", "select-none")
+    summaryLabel.appendChild(document.createTextNode("Summary"))
+    divSummary.appendChild(summaryLabel)
+    divLogs = document.createElement("div")
+    divLogs.classList.add("w-[50%]", "bg-[#6585a6]", "flex", "justify-center", "items-center", "cursor-pointer", "rounded-tr-lg", "transition", "duration-300", "ease-in-out")
+    logsLabel = document.createElement("p")
+    logsLabel.classList.add("text-white", "text-xl", "p-2", "pointer-events-none", "select-none", "transition", "duration-300", "ease-in-out")
+    logsLabel.appendChild(document.createTextNode("Logs"))
+    divLogs.appendChild(logsLabel)
+    divButtons = document.createElement("div")
+    divButtons.classList.add("flex", "w-full", "rounded-t-xl")
+    divButtons.appendChild(divSummary)
+    divButtons.appendChild(divLogs)
+    divContent = document.createElement("div")
+    divContent.classList.add("flex", "flex-col", "w-full", "border", "border-x-[0.25rem]", "border-b-[0.25rem]", "border-[#325D88]", "overflow-y-scroll", "transition", "duration-300", "ease-in-out", "h-[20rem]", "py-1", "rounded-b-lg")
+    sumSection.appendChild(divButtons)
+    sumSection.appendChild(divContent)
+    contenSection.appendChild(sumSection)
+    divSummary.addEventListener("click", showSummary)
+    divLogs.addEventListener("click", showLog)
+}
+/**
+ * Function to fetch the data from mongodb
+ */
+const fetchLatestData = async(date = null) => {
+    let serverRes = null
+    summaryParsedData.splice(0, summaryParsedData.length)
+    logsData.splice(0, logsData.length)
+    if(date != null){
+        serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
+        .then(response => response.json())
+        generalData = await fetch("http://127.0.0.1:8000/storage/getData", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
+        .then(response => response.json())
+    }else{
+        serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
+        .then(response => response.json())
+        generalData = await fetch("http://127.0.0.1:8000/storage/getData")
+        .then(response => response.json())
+    }
+    if(generalData.data.Message == null){
+        generateStructure()
+        initializeFiltersSection()
+        showAllData(generalData.data)
+        data = serverRes.data
+        filters = serverRes.filters
+        summaryData = data.filter(element => element.LogStatus != null)
+        startInputButtons()
+        startSummary()
+        loadFilters()
+        fillLogs()
+    }else{
+        contenSection.innerHTML = ""
+        filtersSection.innerHTML = ""
+        filtersSection.classList = ["filters"]
+        filtersSection.classList.add("w-[25vw]", "justify-self-center", "flex", "flex-col", "gap-y-0")
+        let divAlert = document.createElement("div")
+        divAlert.classList.add("border-red-600", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "p-3", "text-center", "absolute", "top-[8rem]", "left-[44%]")
+        let textAlert = document.createElement("h2")
+        textAlert.classList.add("text-xl", "text-red-600")
+        textAlert.appendChild(document.createTextNode(generalData.data.Message))
+        divAlert.appendChild(textAlert)
+        contenSection.appendChild(divAlert)
+    }
+
 }
 
 fetchLatestData()
@@ -64,7 +109,7 @@ fetchLatestData()
 /**
  * Function to generate the Summary and Logs contents
  */
-const logsData = []
+
 const fillLogs = ()=>{
     if(data != null){
         data.forEach(element => {
@@ -132,7 +177,6 @@ const filterLogs = ()=>{
     let prevLine = null
     let dataFound = null
     let increment = 0
-    let filteredResult = []
     if(selectedFilters["time"] != "All"){
         while(dataFound == null){
             let element = logsData[increment].split(" ")
@@ -226,7 +270,7 @@ const filterLogs = ()=>{
         printAllLogs()
     }
 }
-const summaryParsedData = []
+
 const fillSummary = ()=>{
     if(summaryData != null){
         summaryData.forEach(element =>{
@@ -288,22 +332,24 @@ const startSummary = ()=>{
         divContent.appendChild(parragraph)
     })
 }
-divSummary.addEventListener("click", showSummary)
-divLogs.addEventListener("click", showLog)
+
 
 /**
  * Creation of the Filters section
  */
-let filtersSection = document.querySelector("div.filters")
-filtersSection.classList.add("w-[25vw]", "fixed", "left-[2rem]", "top-[7.75rem]", "border-r-[#3e3f3a]", "border-r-[0.15rem]", "border-opacity-50", "h-[15rem]", "flex", "flex-col", "items_center")
-let filtersCard = document.createElement("div")
-filtersCard.classList.add("w-[95%]", "mt-5")
-filtersSection.appendChild(filtersCard)
-let sectionTitle = document.createElement("h3")
-sectionTitle.classList.add("text-lg", "self-center", "text-white", "w-full", "bg-[#325D88]", "rounded-t-lg", "text-center", "py-1")
-sectionTitle.appendChild(document.createTextNode("Filters"))
-let sectionBody = document.createElement("div")
-sectionBody.classList.add("border", "border-[#325D88]", "border-[0.25rem]", "border-t-0", "w-full", "h-[10rem]", "rounded-b-lg", "flex", "flex-col", "items-center")
+const initializeFiltersSection = ()=>{
+    filtersSection = document.querySelector("div.filters")
+    filtersSection.innerHTML = ""
+    filtersSection.classList.add("w-[25vw]", "fixed", "left-[2rem]", "top-[7.75rem]", "border-r-[#3e3f3a]", "border-r-[0.15rem]", "border-opacity-50", "h-[15rem]", "flex", "flex-col", "items_center")
+    filtersCard = document.createElement("div")
+    filtersCard.classList.add("w-[95%]", "mt-5")
+    filtersSection.appendChild(filtersCard)
+    sectionTitle = document.createElement("h3")
+    sectionTitle.classList.add("text-lg", "self-center", "text-white", "w-full", "bg-[#325D88]", "rounded-t-lg", "text-center", "py-1")
+    sectionTitle.appendChild(document.createTextNode("Filters"))
+    sectionBody = document.createElement("div")
+    sectionBody.classList.add("border", "border-[#325D88]", "border-[0.25rem]", "border-t-0", "w-full", "h-[10rem]", "rounded-b-lg", "flex", "flex-col", "items-center")
+}
 /**
  * Function to create the filter form and the inputs
  */
@@ -339,11 +385,12 @@ const loadFilters = ()=>{
     operationInput.addEventListener("change", ()=>{
         if(operationInput.value != "All"){
             dataFiltered = generalData.data.filter((element)=> element.type == operationInput.value)
+            console.log(dataFiltered)
             dateInput.innerHTML = ""
             dateInput.appendChild(defaultDate)
             timeInput.innerHTML = ""
             timeInput.appendChild(defaultTime)
-            dataFiltered.forEach(element =>{
+            dataFiltered[0].data.forEach(element =>{
                 if(dateInput.children.length == 0){
                     let option = document.createElement("option")
                     option.setAttribute("value", element.Sdate)
@@ -423,7 +470,8 @@ const loadFilters = ()=>{
                     timeInput.appendChild(option)
                 })
             }else{
-                let filteredTimes = structuredClone(generalData.data.filter((element)=> element.type == operationInput.value && element.Sdate == dateInput.value))
+                let filteredTimes = structuredClone(generalData.data.filter((element)=> element.type == operationInput.value))
+                filteredTimes = filteredTimes[0].data.filter((element)=> element.Sdate == dateInput.value)
                 for (let i = 0; i < filteredTimes.length; i++) {
                     let option = document.createElement("option")
                     option.setAttribute("value", filteredTimes[i].Etime)
@@ -460,12 +508,6 @@ const loadFilters = ()=>{
             if(selectedFilters["operation"] != "All"){
                 filteredData = generalData.data.filter((element) => selectedFilters["operation"] == element.type)
             }
-            if(selectedFilters["date"] != "All"){
-                filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
-            }
-            if(selectedFilters["time"] != "All"){
-                filteredData = generalData.data.filter((element) => selectedFilters["time"] == element.Etime)
-            }
             showAllData(filteredData)
         }else{
             if(operationInput.value != "All" && dateInput.value == "All" && timeInput.value == "All"){
@@ -488,10 +530,9 @@ const loadFilters = ()=>{
                 }
                 let filteredData =  []
                 if(selectedFilters["date"] != "All"){
-                    filteredData = generalData.data.filter((element) => selectedFilters["date"] == element.Sdate)
+                    filteredData = generalData.data.data.filter((element) => selectedFilters["date"] == element.Sdate)
                 }
                 if(selectedFilters["time"] != "All"){
-                    let lastLine = 0
                     let found = false
                     for (let i = 0; i < logsData.length; i++) {
                         if(logsData[i] != "-----------------------" && !found){
@@ -502,7 +543,7 @@ const loadFilters = ()=>{
                         }else{
                             if(logsData[i] == "-----------------------" && found){
                                 let elementos = logsData[i-1].split(" ")
-                                filteredData = generalData.data.filter((element) => elementos[0] == element.Etime)
+                                filteredData = generalData.data.data.filter((element) => elementos[0] == element.Etime)
                                 break
                             }
                         }
@@ -554,7 +595,7 @@ const showAllData = (data)=>{
     let graphicContents = document.querySelector("div.graphicSection")
     if( graphicContents == null){
         graphicContents = document.createElement("div")
-        graphicContents.classList.add("w-[66%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
+        graphicContents.classList.add("w-[90%]", "flex", "flex-col", "gap-y-3", "self-center", "graphicSection")
     }else{
         graphicContents.innerHTML = "" 
     }
@@ -564,7 +605,7 @@ const showAllData = (data)=>{
         let title = document.createElement("h3")
         title.appendChild(document.createTextNode(element.type))
         title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
-        let summary = document.createElement("section")
+        /* let summary = document.createElement("section")
         summary.classList.add("flex", "items-center", "justify-center", "border-b-[#3e3f3a]", "border-b-[0.15rem]", "border-opacity-50", "gap-x-5")
         let labels = ["Start: ", "End: ", "RA: ", "DEC: "]
         labels.forEach(label => {
@@ -594,20 +635,31 @@ const showAllData = (data)=>{
                 divParragraph.appendChild(pContent)
             }
             summary.appendChild(divParragraph)
-        })
+        }) */
         let histograms = document.createElement("section")
         histograms.classList.add("flex", "flex-col", "gap-y-2", "my-2")
-        let imageArray = [...element.img]
+        let imageArray = [...element.file]
         imageArray.sort((a,b)=>{return a.length - b.length})
-        for (let i = 0; i < imageArray.length; i++) {         
-            let newImage = document.createElement("img")
-            newImage.setAttribute("src", imageArray[i])
-            newImage.classList.add("w-[95%]", "h-[25rem]", "self-center")
-            histograms.appendChild(newImage)
+        for (let i = 0; i < imageArray.length; i++) {   
+            /*let newImage = document.createElement("img")
+            newImage.setAttribute("src", imageArray[i].replace("html", "img").replace(".html", ".png"))
+            newImage.classList.add("w-[95%]", "h-[25rem]", "self-center") */
+            let newIframe = document.createElement("iframe")
+            newIframe.setAttribute("src", imageArray[i])
+            newIframe.setAttribute("loading", "lazy")
+            newIframe.classList.add("w-[95%]", "h-[25rem]", "self-center")
+            if(!imageArray[i].includes("torque") && !imageArray[i].includes("Diff")){
+                newIframe.classList.add("order-1")
+            }else if(!imageArray[i].includes("Diff")){
+                newIframe.classList.add("order-2")
+            }else{
+                newIframe.classList.add("order-3")
+            }
+            histograms.appendChild(newIframe)
         }
 
         card.appendChild(title)
-        card.appendChild(summary)
+        //card.appendChild(summary)
         card.appendChild(histograms)
         graphicContents.appendChild(card)
     });
@@ -630,4 +682,79 @@ const resetFilters = (dateInput, defaultDate,  timeInput, defaultTime)=>{
     timeInput.innerHTML = ""
     timeInput.appendChild(defaultTime)
 
+}
+/**
+ * Function that adds the interactive buttons to the date input
+ */
+const startInputButtons = ()=>{
+    let div = document.querySelector("div.dateInput")
+    if(div.children.length == 2){
+        div.classList.add("flex", "flex-row", "items-center", "gap-x-1")
+        let backButton = document.createElement("button")
+        backButton.classList.add("rounded-xl", "bg-[#325D88]", "back")
+        let buttonImage = document.createElement("img")
+        buttonImage.setAttribute("src", "static/img/arrow.svg")
+        buttonImage.classList.add("size-6", "rotate-180")
+        backButton.appendChild(buttonImage)
+        let fowardButton = document.createElement("button")
+        fowardButton.classList.add("rounded-xl", "bg-[#325D88]", "foward")
+        let buttonImage2 = document.createElement("img")
+        buttonImage2.setAttribute("src", "static/img/arrow.svg")
+        buttonImage2.classList.add("size-6")
+        fowardButton.appendChild(buttonImage2)
+        let searchButton = document.createElement("button")
+        searchButton.classList.add("rounded-xl", "bg-[#325D88]", "search")
+        let buttonImage3 = document.createElement("img")
+        buttonImage3.setAttribute("src", "static/img/calendarSearch.svg")
+        buttonImage3.classList.add("size-6", "p-1")
+        searchButton.appendChild(buttonImage3)
+        div.appendChild(backButton)
+        div.appendChild(fowardButton)
+        div.appendChild(searchButton)
+        let divChilds = [...div.children]
+        let input = null
+        divChilds.forEach(child => {
+            switch (true) {
+                case child.classList.contains("back"):
+                    child.classList.add("order-1")
+                    break;
+                case child.classList.contains("subtitle"):
+                    child.classList.add("order-2")
+                    break;
+                case child.classList.contains("input"):
+                    child.classList.add("order-3")
+                    input = child
+                    break;
+                case child.classList.contains("foward"):
+                    child.classList.add("order-4")
+                    break;
+                case child.classList.contains("search"):
+                    child.classList.add("order-5")
+                    break;
+            
+            }
+        });
+        backButton.addEventListener("click", ()=>{
+            let value = input.value
+            let newDate = new Date(value)
+            newDate.setDate(newDate.getDate()-1)
+            input.valueAsDate = newDate
+        })
+        fowardButton.addEventListener("click", ()=>{
+            let value = input.value
+            let newDate = new Date(value)
+            newDate.setDate(newDate.getDate()+1)
+            input.valueAsDate = newDate
+        })
+        searchButton.addEventListener("click", ()=>{
+            let value = input.value
+            if(generalData.data[0] != undefined){
+                if(value != generalData.data[0].data[0]["Sdate"]){
+                    fetchLatestData(value)
+                }
+            }else{
+                fetchLatestData(value)
+            }
+        })
+    }
 }

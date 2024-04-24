@@ -398,7 +398,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     dataLine["Etime"] = []
     dataLine["RA"] = []
     dataLine["DEC"] = []
-    dataLine["img"] = []
+    dataLine["file"] = []
     dataLine["addText"] = []
     dataLine["position"] = []
     dataLine["loadPin"] = []
@@ -413,7 +413,7 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     dataLine["Edate"].append(str(datetime.fromtimestamp(tmax).strftime("%Y-%m-%d")))
     dataLine["RA"].append(ra)
     dataLine["DEC"].append(dec)
-    dataLine["img"].append(figname)
+    dataLine["file"].append(figname)
     dataLine["addText"].append(addtext)
     if dfpos is not None:
         dataLine["position"].append(dfpos.to_json())
@@ -431,9 +431,9 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     if dfbm is not None:
         dataLine["bendModel"].append(dfbm.to_json())
         #FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
-    print(dfacc)
+    #print(dfacc)
     data = []
-    data.append(dataLine)  
+    data.append(dataLine)
     req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
 
         
@@ -581,14 +581,16 @@ def FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack):
 
         hostd = fig.add_subplot(spec[0])
         if tracksky is not None:
+            print(sky_lst_track)
             plt.hist(sky_lst_track.ra.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
-        plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
+        print(sky_lst)
+        #plt.hist(sky_lst.ra.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
         plt.axvline(x=ra, color='k', linestyle='--',label="Target")
         hostd.set_xlabel("RA[deg]", fontsize=15)
         #hostd.set_title(figname3, fontsize=15)    
         hostd.legend()
 
-        hostd = fig.add_subplot(spec[1])
+        """ hostd = fig.add_subplot(spec[1])
         if tracksky is not None:
             plt.hist(sky_lst_track.dec.deg,bins=30,histtype='step',density=False,label='Drive target', alpha=0.7,linewidth=3)
         plt.hist(sky_lst.dec.deg,bins=30,histtype='step',density=False,label='Telescope pointing', alpha=0.7,linewidth=3)
@@ -624,8 +626,8 @@ def FigRADec(figname,fichierhtml,dfpos,dfbm,ra,dec,dfacc,dftrack):
         plt.axvline(x=math.log10(4.e-02), color='red', linestyle='--',label="Encoder resolution")
         hostd.set_xlabel('log$_{10}$(Accuracy [arcsec])',fontsize=15)
         hostd.legend()
-
-        plt.savefig(figname3, bbox_inches='tight')
+ """
+        plt.savefig("/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/prueba/test.png")
         #plt.show()
         plt.close()
 
@@ -921,7 +923,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             sendname = endname.strftime("%Y%m%d_%Hh%Mm%Ss")
             #print(sbegname)
             #print(sendname)
-            figname = "_%s_%s"%(sbegname,sendname) + ".png"
+            figname = "_%s_%s"%(sbegname,sendname) + ".html"
             figname = figpre + figname.replace(":","")
             #print(figname)
             trackok2 = trackok[i]
@@ -957,7 +959,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
         endname = datetime.fromtimestamp(end_ok[-1], tz=pytz.utc)
         sbegname = begname.strftime("%Y%m%d_%Hh%Mm%Ss")
         sendname = endname.strftime("%Y%m%d_%Hh%Mm%Ss")
-        figname = "_%s_%s"%(sbegname,sendname) + ".png"
+        figname = "_%s_%s"%(sbegname,sendname) + ".html"
         figname = figpre + figname.replace(":","")
         trackok2 = trackok[-1]
         raok2 = raok[i]
@@ -1039,14 +1041,12 @@ def endhtmlfile(logsorted):
             data["Command"] = logsorted[i][1]
             data["Status"] = None
         else:
-            #print(logsorted[i][1].split(" ")[0])
             logParts = logsorted[i][1].split(" ")
             data["Command"] = logParts[0]
             data["Status"] = logParts[1]+" "+logParts[2]
 
         data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
         data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
-    
         logs.append(data)
         data = {}
     #print(logs)
@@ -1056,11 +1056,15 @@ def endhtmlfile(logsorted):
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     
-    dirname = "./DriveMonitoringApp/DataStorage/static/img/Log_" + filename
+    dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
     dirnamehtml = dirname
 
     generallog.clear()
 
+    firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
+
+    req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
+    
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
     trackcmdinitiale = getDate(filename,"Start Tracking") #Not used?
@@ -1103,6 +1107,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #print(generallogsorted)
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
+    #generallogsorted.hola #Loop-break
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
     #endhtmlfile(generallogsorted)
@@ -1120,7 +1125,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                 os.mkdir(dirname+"/Track")
         print("====== Track =======")
         selectedType = "1"
-        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+        #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
 
     if lastone ==0 :
         if len(parkoutbeg) != 0:
@@ -1128,14 +1133,14 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                     os.mkdir(dirname+"/Parkout")
             print("====== Parkout =======")
             selectedType = "2"
-            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
+            #checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
 
         if len(parkinbeg) != 0:
             if path.exists(dirname+"/Parkin")==False :
                     os.mkdir(dirname+"/Parkin")
             print("====== Parkin =======")
             selectedType = "3"
-            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
+            #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
             #checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],2,"ParkIn") 
 
         if len(gotobeg) != 0:
@@ -1143,14 +1148,15 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
                     os.mkdir(dirname+"/GoToPos")
             print("====== GoToPos =======")
             selectedType = "4"
-            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+            #checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
     
         #if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
             #print(generalData)
             
             #print(req.json()["Message"])
-
+    req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+    print(req.json()["Message"])
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

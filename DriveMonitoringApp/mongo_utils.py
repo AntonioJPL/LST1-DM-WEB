@@ -8,7 +8,9 @@ from bson import ObjectId
 import os
 import glob
 from datetime import datetime
+import datetime as DT
 import pytz
+from django.contrib.staticfiles import finders
 
 class MongoDb:
 
@@ -16,7 +18,6 @@ class MongoDb:
     dbname = my_client['Drive-Monitoring']
     collection_logs = dbname["Logs"]
     collection_data = dbname["Data"]
-    img_rute = "/Users/antoniojose/Desktop/data/example/data/R0/LST1/lst-drive/log/DisplayTrack/DriveMonitoringApp/DataStorage/static/"
    
     #Function that initialize the general data
     def __init__(self):
@@ -77,36 +78,67 @@ class MongoDb:
         return HttpResponse("Deleting an objecth with the indicated id")
 
     def listLogs(self, date):
-        #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !!
-        data = list(self.collection_logs.find().sort({"Stime": -1}).sort({"Sdate": +1}))
-        logs = list(self.dbname["LogStatus"].find())
-        commands = list(self.dbname["Commands"].find())
-        comStatus = list(self.dbname["CommandStatus"].find())
-        for element in data:
-            element["_id"] = str(element["_id"])
-            if element["LogStatus"] is not None:
-                element["LogStatus"] = [searchedElement["name"] for searchedElement in logs if searchedElement["_id"] == ObjectId(element["LogStatus"])]
-                element["LogStatus"] = element["LogStatus"][0]
-            element["Command"] = [searchedElement["name"] for searchedElement in commands if searchedElement["_id"] == ObjectId(element["Command"])]
-            element["Command"] = element["Command"][0]
-            if element["Status"] is not None:
-                element["Status"] = [searchedElement["name"] for searchedElement in comStatus if searchedElement["_id"] == ObjectId(element["Status"])]
-                element["Status"] = element["Status"][0]
-        return data
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) == 1:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            end = datetime.fromtimestamp(operation[0]["Tmax"])
+            end = str(end).split(" ")
+            data = list(self.dbname["Logs"].aggregate([{"$match":{"$or": [{"$and": [{"Date": start[0]}, {"Time": {"$gte": start[1]}}]}, {"$and": [{"Date": end[0]},{"Time": {"$lte": end[1]}}]}]}}]))
+            logs = list(self.dbname["LogStatus"].find())
+            commands = list(self.dbname["Commands"].find())
+            comStatus = list(self.dbname["CommandStatus"].find())
+            for element in data:
+                element["_id"] = str(element["_id"])
+                if element["LogStatus"] is not None:
+                    element["LogStatus"] = [searchedElement["name"] for searchedElement in logs if searchedElement["_id"] == ObjectId(element["LogStatus"])]
+                    element["LogStatus"] = element["LogStatus"][0]
+                element["Command"] = [searchedElement["name"] for searchedElement in commands if searchedElement["_id"] == ObjectId(element["Command"])]
+                element["Command"] = element["Command"][0]
+                if element["Status"] is not None:
+                    element["Status"] = [searchedElement["name"] for searchedElement in comStatus if searchedElement["_id"] == ObjectId(element["Status"])]
+                    element["Status"] = element["Status"][0]
+            return data
+        if len(operation) == 0: 
+            return {"Message": "There is no data to show"}
+        if len(operation) > 1:
+            return {"Message": "There is more than one operation in this date"}
+
     def listData(self, date):
         #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
-        data = list(self.collection_data.find().sort({"Stime": -1}).sort({"Sdate": +1}))
-        types = list(self.dbname["Types"].find())
-        for element in data:
-            element["_id"] = str(element["_id"])
-            if element["type"] is not None:
-                element["type"] = [searchedElement["name"] for searchedElement in types if searchedElement["_id"] == ObjectId(element["type"])]
-                element["type"] = element["type"][0]
-            images = glob.glob(self.img_rute+element["img"]+"*")
-            for i in range(0, len(images)):
-                images[i] = images[i].replace(self.img_rute, "static/")
-            element["img"] = images
-        return data
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) == 1:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            end = datetime.fromtimestamp(operation[0]["Tmax"])
+            end = str(end).split(" ")
+            types = list(self.dbname["Types"].find())
+            elements = []
+            endDate = datetime.strptime(date.replace("-", ""), '%Y%m%d')
+            endDate += DT.timedelta(days=1)
+            for element in types:
+                plot = {}
+                plot["type"] = element["name"]
+                foundElement = list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}, {"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
+                if len(foundElement) > 0:
+                    file = foundElement[0]["file"].split("/")
+                    filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
+                    file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+                    files = glob.glob(file+"/"+filename+"*")
+                    plot["file"] = []
+                    for i in range(0, len(files)):
+                        files[i] = files[i].split("/")
+                        #print(files[i])
+                        files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                        plot["file"].append(files[i])
+                    plot["data"]=foundElement
+                    elements.append(plot)
+            #print(elements)
+            return elements
+        if len(operation) == 0: 
+            return {"Message": "There is no data to show"}
+        if len(operation) > 1:
+            return {"Message": "There is more than one operation in this date"}
     
     def storeLogs(self, data):
         operation = {}
@@ -142,11 +174,12 @@ class MongoDb:
                      
         try:
             self.dbname["Logs"].insert_many(data)
-            if self.dbname["Operations"].find(operation) == None:
+            #print("Find result")
+            #print(len(list(self.dbname["Operations"].find(operation))) == 0)
+            if len(list(self.dbname["Operations"].find(operation))) == 0:
                 self.dbname["Operations"].insert_one(operation)
-            return True
         except Exception:
-            return False
+            print(Exception.with_traceback())
     def storeGeneralData(self, data):
         typeId = self.dbname["Types"].find_one({"name": data["type"]}, {"name": 0})
         data["type"] = str(typeId["_id"])
@@ -329,15 +362,23 @@ class MongoDb:
         newDay = str(newDay)
         result = dateParts[0]+"-"+dateParts[1]+"-"+newDay.zfill(2)
         return result
-    def getFilters(self):
+    def getFilters(self, date):
+        if(date == None):
+            date == self.getLatestDate(self)
         response = {}
         response["types"] = self.dbname["Types"].distinct("name")
-        response["dates"] = self.dbname["Logs"].distinct("Date")
-        times = {}
-        for date in response["dates"]:
-            times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
-        response["times"] = times
-        return response
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) == 1:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            end = datetime.fromtimestamp(operation[0]["Tmax"])
+            end = str(end).split(" ")
+            response["dates"] = [start[0], end[0]]
+            times = {}
+            for date in response["dates"]:
+                times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
+            response["times"] = times
+        return response 
     def isData(self):
         return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
     def getFirstData(self):
@@ -487,6 +528,16 @@ class MongoDb:
             result["ZAC"][index] = data["ZAC"]
             index += 1
         return result
-    def getOperationTime(self):
-        return list(self.dbname["Operations"].find())
-    
+    def getOperation(self, date):
+        return list(self.dbname["Operations"].find({"Date": date}))
+    def getDatedData(self, tmin, tmax):
+        start = datetime.fromtimestamp(tmin)
+        start = str(start).split(" ")
+        end = datetime.fromtimestamp(tmax)
+        end = str(end).split(" ")
+        return list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}]))
+    def getOperationTypes(self):
+        return list(self.dbname["Types"].find())
+    def checkDates(self, date):
+        print()
+        #self.dbname["Operations"].aggregate([{"$match": {""}}])

@@ -5,6 +5,8 @@
  */
 
 const body = document.querySelector("body")
+const title = document.querySelector("title")
+const currentUrl = window.location.href
 
 /**
  * Creation of the Summary/Logs section and the interaction between tabs
@@ -64,42 +66,77 @@ const generateStructure = ()=>{
  */
 const fetchLatestData = async(date = null) => {
     let serverRes = null
-    summaryParsedData.splice(0, summaryParsedData.length)
-    logsData.splice(0, logsData.length)
-    if(date != null){
-        serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
-        .then(response => response.json())
-        generalData = await fetch("http://127.0.0.1:8000/storage/getData", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
-        .then(response => response.json())
+    let urlParts = currentUrl.split("/")
+    if(urlParts[urlParts.length-1] == "driveMonitoring"){
+        summaryParsedData.splice(0, summaryParsedData.length)
+        logsData.splice(0, logsData.length)
+        if(date != null){
+            serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
+            .then(response => response.json())
+            generalData = await fetch("http://127.0.0.1:8000/storage/getData", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
+            .then(response => response.json())
+        }else{
+            serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
+            .then(response => response.json())
+            generalData = await fetch("http://127.0.0.1:8000/storage/getData")
+            .then(response => response.json())
+        }
+        if(generalData.data.Message == null){
+            initializeFiltersSection()
+            generateStructure()
+            showAllData(generalData.data)
+            data = serverRes.data
+            filters = serverRes.filters
+            summaryData = data.filter(element => element.LogStatus != null)
+            startInputButtons()
+            startSummary()
+            loadFilters()
+            fillLogs()
+        }else{
+            contenSection.innerHTML = ""
+            filtersSection.innerHTML = ""
+            filtersSection.classList = ["filters"]
+            filtersSection.classList.add("w-[25vw]", "justify-self-center", "flex", "flex-col", "gap-y-0")
+            let divAlert = document.createElement("div")
+            divAlert.classList.add("border-red-600", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "p-3", "text-center", "absolute", "top-[8rem]", "left-[44%]")
+            let textAlert = document.createElement("h2")
+            textAlert.classList.add("text-xl", "text-red-600")
+            textAlert.appendChild(document.createTextNode(generalData.data.Message))
+            divAlert.appendChild(textAlert)
+            contenSection.appendChild(divAlert)
+        }
     }else{
-        serverRes = await fetch("http://127.0.0.1:8000/storage/getLogs")
-        .then(response => response.json())
-        generalData = await fetch("http://127.0.0.1:8000/storage/getData")
-        .then(response => response.json())
-    }
-    if(generalData.data.Message == null){
-        generateStructure()
-        initializeFiltersSection()
-        showAllData(generalData.data)
-        data = serverRes.data
-        filters = serverRes.filters
-        summaryData = data.filter(element => element.LogStatus != null)
-        startInputButtons()
-        startSummary()
-        loadFilters()
-        fillLogs()
-    }else{
-        contenSection.innerHTML = ""
-        filtersSection.innerHTML = ""
-        filtersSection.classList = ["filters"]
-        filtersSection.classList.add("w-[25vw]", "justify-self-center", "flex", "flex-col", "gap-y-0")
-        let divAlert = document.createElement("div")
-        divAlert.classList.add("border-red-600", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "p-3", "text-center", "absolute", "top-[8rem]", "left-[44%]")
-        let textAlert = document.createElement("h2")
-        textAlert.classList.add("text-xl", "text-red-600")
-        textAlert.appendChild(document.createTextNode(generalData.data.Message))
-        divAlert.appendChild(textAlert)
-        contenSection.appendChild(divAlert)
+        if(date != null){
+            serverRes = await fetch("http://127.0.0.1:8000/storage/getLoadPins", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({"date": date})})
+            .then(response => response.json())
+        }else{
+            serverRes = await fetch("http://127.0.0.1:8000/storage/getLoadPins")
+            .then(response => response.json())
+        }
+        if(generalData.data.Message == null){
+            initializeFiltersSection()
+            generateStructure()
+            showAllData(generalData.data)
+            data = serverRes.data
+            filters = serverRes.filters
+            summaryData = data.filter(element => element.LogStatus != null)
+            startInputButtons()
+            startSummary()
+            loadFilters()
+            fillLogs()
+        }else{
+            contenSection.innerHTML = ""
+            filtersSection.innerHTML = ""
+            filtersSection.classList = ["filters"]
+            filtersSection.classList.add("w-[25vw]", "justify-self-center", "flex", "flex-col", "gap-y-0")
+            let divAlert = document.createElement("div")
+            divAlert.classList.add("border-red-600", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "p-3", "text-center", "absolute", "top-[8rem]", "left-[44%]")
+            let textAlert = document.createElement("h2")
+            textAlert.classList.add("text-xl", "text-red-600")
+            textAlert.appendChild(document.createTextNode(generalData.data.Message))
+            divAlert.appendChild(textAlert)
+            contenSection.appendChild(divAlert)
+        }
     }
 
 }
@@ -750,11 +787,17 @@ const startInputButtons = ()=>{
             let value = input.value
             if(generalData.data[0] != undefined){
                 if(value != generalData.data[0].data[0]["Sdate"]){
-                    fetchLatestData(value)
+                    changeTitleAndFetch(value)
                 }
             }else{
-                fetchLatestData(value)
+               changeTitleAndFetch(value)
             }
         })
     }
+}
+const changeTitleAndFetch = (value)=>{
+    titleParts = title.innerHTML.split("-")
+    title.innerHTML = ""
+    title.appendChild(document.createTextNode(titleParts[0]+"-"+titleParts[1]+"-"+value))
+    fetchLatestData(value)
 }

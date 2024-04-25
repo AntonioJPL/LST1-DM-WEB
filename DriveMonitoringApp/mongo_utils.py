@@ -215,11 +215,11 @@ class MongoDb:
         keys = list(data["T"].keys())
         if len(keys) > 0:
             for i in keys:
-                rowData = {}
-                rowData["T"] = data["T"][i]
-                rowData["LoadPin"] = data["LoadPin"][i]
-                rowData["Load"] = data["Load"][i]
-                if self.dbname["Load_Pin"].find_one(rowData) == None:
+                if self.dbname["Load_Pin"].find_one({"T": data["T"][i], "LoadPin": data["LoadPin"][i], "Load": data["Load"][i]}) == None:
+                    rowData = {}
+                    rowData["T"] = data["T"][i]
+                    rowData["LoadPin"] = data["LoadPin"][i]
+                    rowData["Load"] = data["Load"][i]
                     newData.append(rowData)
             if len(newData)>1:
                 self.dbname["Load_Pin"].insert_many(newData)
@@ -236,13 +236,13 @@ class MongoDb:
         keys = list(data["T"].keys())
         if len(keys) > 0:
             for i in keys:
-                rowData = {}
-                rowData["T"] = data["T"][i]
-                rowData["Azth"] = data["Azth"][i]
-                rowData["ZAth"] = data["ZAth"][i]
-                rowData["vsT0"] = data["vsT0"][i]
-                rowData["Tth"] = data["Tth"][i]
-                if self.dbname["Track"].find_one({"T": rowData["T"], "Azth": rowData["Azth"], "ZAth": rowData["ZAth"], "vsT0": rowData["vsT0"]}) == None:
+                if self.dbname["Track"].find_one({"T": data["T"][i], "Azth": data["Azth"][i], "ZAth": data["ZAth"][i], "vsT0": data["vsT0"][i], "Tth": data["Tth"][i]}) == None:
+                    rowData = {}
+                    rowData["T"] = data["T"][i]
+                    rowData["Azth"] = data["Azth"][i]
+                    rowData["ZAth"] = data["ZAth"][i]
+                    rowData["vsT0"] = data["vsT0"][i]
+                    rowData["Tth"] = data["Tth"][i]
                     newData.append(rowData)
             if len(newData)>1:
                 self.dbname["Track"].insert_many(newData)
@@ -350,6 +350,7 @@ class MongoDb:
             return False
     def checkDuplicatedValues(self, type, date, time):
         typeId = self.dbname["Types"].find_one({"name": type}, {"name": 0})
+        print(type)
         typeId = str(typeId["_id"])
         if self.dbname["Data"].find_one({"type": type, "Sdate": date, "Stime": time}) != None:
             return True
@@ -539,5 +540,9 @@ class MongoDb:
     def getOperationTypes(self):
         return list(self.dbname["Types"].find())
     def checkDates(self, date):
-        print()
-        #self.dbname["Operations"].aggregate([{"$match": {""}}])
+        lastElementFound = list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 1}]))
+        lastElementFound = lastElementFound[0]
+        if lastElementFound["Date"] == date:
+            return JsonResponse({"lastDate": True})
+        else: 
+            return JsonResponse({"lastDate": lastElementFound["Date"]})

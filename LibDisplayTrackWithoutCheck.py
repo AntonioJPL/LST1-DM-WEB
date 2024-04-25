@@ -28,6 +28,7 @@ import numpy as np
 
 import requests
 import asyncio
+import subprocess
 
 
 shifttemps=0
@@ -347,8 +348,8 @@ def getLoadPin(filename2,tmin,tmax):
         dval = int(val[0])
         dateval = datetime.fromtimestamp(dval)
         lp=int(val[1])
-        """ if(lp!=107 and lp!=207):
-            continue """
+        if(lp!=107 and lp!=207):
+            continue
         if dval>tmin and dval<tmax:
             for v in range(2,len(val)):
                 dvalinc = int(dval) + (v-2)*0.1
@@ -1011,6 +1012,8 @@ def endhtmlfile(logsorted):
     data = {}
     commandPosition = None
     for i in range(0,len(logsorted)):
+        #TODO - Fix the finish over the stop !!
+      
         if logsorted[i][1].find("action error")!= -1 and commandPosition != None :
             logs[commandPosition]["LogStatus"] = "Error"
             commandPosition = None
@@ -1061,25 +1064,13 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     generallog.clear()
 
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
+    actualDate = getDateAndLine(filename, "Drive Regulation Parameters Azimuth")
+    actualDate = actualDate[1][0].split(" ")
+    actualDate = actualDate[0]
+    actualDate = actualDate.split("/")
+    actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
+    print("Runing script for day "+actualDate+" ...")
 
-    req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
-    lastDate = req.json()["lastDate"]
-    if lastDate is not True:
-        print("---------- The System is not up to date. Last data date on MongoDB: "+lastDate+" -----------")
-        print("Running missing days ...")
-        dateFormat = ("%Y/%m/%d")
-        actualDate = getDateAndLine(filename, "Drive Regulation Parameters Azimuth")
-        actualDate = actualDate[1][0].split(" ")
-        actualDate = actualDate[0]
-        actualDate = actualDate.split("/")
-        actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
-        lastDate = lastDate.replace("-", "/")
-        parsedLastDBDate = datetime.strptime(lastDate, dateFormat)
-        parsedActualDate = datetime.strptime(actualDate, dateFormat)
-        while parsedLastDBDate < parsedActualDate:
-            asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
-            print(parsedLastDBDate)
-            parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
 
     
     #Genereal
@@ -1129,8 +1120,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #checkallactions(generallogsorted)
     #endhtmlfile(generallogsorted)
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
-    #UNCOMMENT THIS !!!
-    #endhtmlfile(generallogsorted)
+    endhtmlfile(generallogsorted)
 
     if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
     	if path.exists(dirname)==False :
@@ -1172,8 +1162,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             #print(len(generalData["type"]),len(generalData["Stime"]),len(generalData["Etime"]),len(generalData["RA"]), len(generalData["DEC"]), len(generalData["img"]), len(generalData["addText"]), len(generalData["position"]), len(generalData["loadPin"]), len(generalData["track"]), len(generalData["torque"]), len(generalData["accuracy"]), len(generalData["bendModel"])) 
             #print(generalData)
             
-            #print(req.json()["Message"])
-         
+            #print(req.json()["Message"])   
     req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
     print(req.json()["Message"])
     print("END TIME")
@@ -1224,9 +1213,6 @@ def plotstrangefeature():
     host.legend(lines, [l.get_label() for l in lines],fontsize=13)
     plt.show()    
 
-async def runFile(date):
-    runfile = "sh DisplayTrack-NoCheck.sh %s" % (date)
-    os.system(runfile)
     
 
 

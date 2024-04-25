@@ -22,7 +22,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('storage', Sv.home),
+    path('driveMonitoring', Sv.driveMonitoring, name="driveMonitoring"),
+    path('loadPins', Sv.loadPins, name="loadPins"),
     path('storage/index', Sv.index),
     path('storage/storeLogs', Sv.storeLogs),
     path('storage/storeData', Sv.storeData),

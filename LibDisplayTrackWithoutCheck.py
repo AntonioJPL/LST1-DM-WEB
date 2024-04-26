@@ -30,6 +30,7 @@ import requests
 import asyncio
 import subprocess
 
+from DriveMonitoringApp.mongo_utils import MongoDb
 
 shifttemps=0
 
@@ -212,7 +213,8 @@ def getPos(filename,tmin,tmax):
 #    df['Az'] = df['Az']+dfBM['AzC']
 #    df['ZA'] = df['ZA']+dfBM['ZAC']
     
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storePosition(MongoDb, rows)
 
 #Used in GenerateFig.  
 def getBM(filename,tmin,tmax):    
@@ -230,7 +232,8 @@ def getBM(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3)
     dfBM['T'] = dfBM['T'] + maskT1*-2 + maskT2*-2
     #dfBM['T'] = dfBM['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc)) #Change made by Antonio, check if it is correct
-    return dfBM
+    for rows in dfBM.to_dict('records'):
+        MongoDb.storeBendModel(MongoDb, rows)
                
 def getPrecision(filename,tmin,tmax):    
     
@@ -267,7 +270,8 @@ def getPrecision(filename,tmin,tmax):
     mask0_2 = df['Zdmean']!=0. #This is why data is being ignored
     mask0 = np.logical_and(mask0_2,mask0_1)
     df = df[mask0]
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storeAccuracy(MongoDb, rows)
 
 #Works as getDate but returns date and line of the found cmdstring
 def getDateAndLine(filename,cmdstring):
@@ -306,7 +310,8 @@ def getTorqueNew(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3)
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storeTorque(MongoDb, rows)
     
 ##### READ TRACK VALUES
 def getTrackNew(filename3,tmin,tmax):
@@ -324,7 +329,8 @@ def getTrackNew(filename3,tmin,tmax):
     mask0 = df['vsT0']!=0
     df = df[mask0]
     df['Tth'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storeTrack(MongoDb, rows)
     #print("getTrack %s %s %s %s"%(filename3,tmin,tmax,ttrack))
 
 
@@ -340,24 +346,22 @@ def getLoadPin(filename2,tmin,tmax):
 
     f2 = open(filename2, "r") 
     df=pd.DataFrame(columns=['T','LoadPin','Load'])
-
     lp=0
     lpval=0
+    values = 0
     for line in f2.readlines():
         val=line.split(' ')
         dval = int(val[0])
         dateval = datetime.fromtimestamp(dval)
         lp=int(val[1])
-        if(lp!=107 and lp!=207):
-            continue
-        if dval>tmin and dval<tmax:
-            for v in range(2,len(val)):
-                dvalinc = int(dval) + (v-2)*0.1
-                dateval = datetime.fromtimestamp(dvalinc, tz=pytz.utc)
-                lpval=int(val[v].replace("\n",""))
-                df2=pd.DataFrame({'T':[dateval],'LoadPin':[lp],'Load':[lpval]})
-                df = pd.concat([df2,df],ignore_index=True)
-    return df
+        #if(lp!=107 and lp!=207):
+            #continue 
+        for v in range(2,len(val)):
+            values += 1
+            dvalinc = int(dval) + (v-2)*0.1
+            #dateval = datetime.fromtimestamp(dvalinc, tz=pytz.utc) #I have to do this later on Django
+            lpval=int(val[v].replace("\n",""))
+            MongoDb.storeLoadPin(MongoDb, {'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
 #Used in checkDate and checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
     
@@ -1010,6 +1014,9 @@ def endhtmlfile(logsorted):
     action=""
     actiondate=0
     data = {}
+    operationTmin = None
+    operationTmax = datetime.timestamp(logsorted[len(logsorted)-1][0])
+    operationDate = logsorted[0][0].strftime("%Y-%m-%d")
     commandPosition = None
     for i in range(0,len(logsorted)):
         #TODO - Fix the finish over the stop !!
@@ -1049,11 +1056,14 @@ def endhtmlfile(logsorted):
 
         data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
         data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
+        if operationTmin == None and commandPosition != None:
+            operationTmin = datetime.timestamp(logsorted[commandPosition][0])
         logs.append(data)
         data = {}
-    #print(logs)
-    req = requests.post("http://127.0.0.1:8000/storage/storeLogs", json=logs)
-    print(req.json()["Message"])
+    for element in logs:
+        if element["Command"] != "Drive":
+            MongoDb.storeLogs(MongoDb, element)
+    MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
 
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):

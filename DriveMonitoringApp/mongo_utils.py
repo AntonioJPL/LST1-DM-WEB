@@ -11,6 +11,7 @@ from datetime import datetime
 import datetime as DT
 import pytz
 from django.contrib.staticfiles import finders
+import pandas as pd
 
 class MongoDb:
 
@@ -139,207 +140,90 @@ class MongoDb:
             return {"Message": "There is no data to show"}
         if len(operation) > 1:
             return {"Message": "There is more than one operation in this date"}
-    
-    def storeLogs(self, data):
-        operation = {}
-        for i in range(0, len(data)):
-            if data[i]["LogStatus"] != None:
-                statusId = self.dbname["LogStatus"].find_one({"name":data[i]["LogStatus"]}, {"name": 0})
-                data[i]["LogStatus"] = str(statusId["_id"]) #Id value of the status
-
-            commandId = self.dbname["Commands"].find_one({"name":data[i]["Command"]}, {"name": 0})
-            data[i]["Command"] = str(commandId["_id"]) #Id value of the command
-            
-            if data[i]["Status"] != None:
-                commandStatusId = self.dbname["CommandStatus"].find_one({"name":data[i]["Status"]}, {"name": 0})
-                data[i]["Status"] = str(commandStatusId["_id"]) #Id value of the commandstatus
-            stringTime = data[i]["Date"].replace("-", "/")+" "+data[i]["Time"]
-            timeStamp = datetime.strptime(stringTime, '%Y/%m/%d %H:%M:%S')
-            timeStamp = timeStamp.timestamp()
-            if operation.get("Date") is None:
-                operation["Date"] = data[i]["Date"]
-            else:
-                if operation["Date"] > data[i]["Date"]:
-                    operation["Date"] = data[i]["Date"]
-            if operation.get("Tmin") is None:
-                operation["Tmin"] = timeStamp
-            else:
-                if operation["Tmin"] > timeStamp:
-                    operation["Tmin"] = timeStamp
-            if operation.get("Tmax") is None:
-                operation["Tmax"] = timeStamp
-            else:
-                if operation["Tmax"] < timeStamp:
-                    operation["Tmax"] = timeStamp
-                     
+    def storeOperation(self, data):
         try:
-            self.dbname["Logs"].insert_many(data)
+            self.dbname["Operations"].insert_one(data)
+        except Exception:
+            print()
+            #print("Duplicated Operation entry on Date: "+data["Date"])
+
+    def storeLogs(self, data):
+        
+        if data["LogStatus"] != None:
+            statusId = self.dbname["LogStatus"].find_one({"name":data["LogStatus"]}, {"name": 0})
+            data["LogStatus"] = str(statusId["_id"]) #Id value of the status
+
+        commandId = self.dbname["Commands"].find_one({"name":data["Command"]}, {"name": 0})
+        data["Command"] = str(commandId["_id"]) #Id value of the command
+        
+        if data["Status"] != None:
+            commandStatusId = self.dbname["CommandStatus"].find_one({"name":data["Status"]}, {"name": 0})
+            data["Status"] = str(commandStatusId["_id"]) #Id value of the commandstatus
+        stringTime = data["Date"].replace("-", "/")+" "+data["Time"]
+        timeStamp = datetime.strptime(stringTime, '%Y/%m/%d %H:%M:%S')
+        timeStamp = timeStamp.timestamp()
+                    
+        try:
+            self.dbname["Logs"].insert_one(data)
             #print("Find result")
             #print(len(list(self.dbname["Operations"].find(operation))) == 0)
-            if len(list(self.dbname["Operations"].find(operation))) == 0:
-                self.dbname["Operations"].insert_one(operation)
         except Exception:
-            print(Exception.with_traceback())
+            pass
+            #print("Duplicated Log entry on Date: "+data["Date"]+", and Time: "+data["Time"])
     def storeGeneralData(self, data):
         typeId = self.dbname["Types"].find_one({"name": data["type"]}, {"name": 0})
         data["type"] = str(typeId["_id"])
-        if self.dbname["Data"].find_one({"type": data["type"], "Stime": data["Stime"], "Sdate": data["Sdate"], "Edate": data["Edate"], "Etime": data["Etime"]}) == None:
-            try:
-                self.dbname["Data"].insert_one(data)
-                return True
-            except Exception:
-                return False
+        try:
+            self.dbname["Data"].insert_one(data)
+            return True
+        except Exception:
+            pass
+            #print("Duplicated Data entry on Sdate: "+str(data["Sdate"])+", type: "+str(data["type"]))
     def storePosition(self, data):
-        newData = []
-        keys = list(data["T"].keys())
-        if len(keys) > 0:
-            for i in keys:
-                rowData = {}
-                rowData["T"] = data["T"][i]
-                rowData["Az"] = data["Az"][i]
-                rowData["ZA"] = data["ZA"][i]
-                if self.dbname["Position"].find_one(rowData) == None:
-                    newData.append(rowData)
-            if len(newData)>1:
-                self.dbname["Position"].insert_many(newData)
-                return True
-            else:
-                if len(newData) == 1:
-                    self.dbname["Position"].insert_one(newData[0])
-                    return True
-                else:
-                    return False
+        try:
+            self.dbname["Position"].insert_one(data)
+        except Exception:
+            pass
+            ##print("Duplicated Position entry on T: "+str(data["T"]))
             
     def storeLoadPin(self, data):
-        newData = []
-        keys = list(data["T"].keys())
-        if len(keys) > 0:
-            for i in keys:
-                if self.dbname["Load_Pin"].find_one({"T": data["T"][i], "LoadPin": data["LoadPin"][i], "Load": data["Load"][i]}) == None:
-                    rowData = {}
-                    rowData["T"] = data["T"][i]
-                    rowData["LoadPin"] = data["LoadPin"][i]
-                    rowData["Load"] = data["Load"][i]
-                    newData.append(rowData)
-            if len(newData)>1:
-                self.dbname["Load_Pin"].insert_many(newData)
-                return True
-            else:
-                if len(newData) == 1:
-                    self.dbname["Load_Pin"].insert_one(newData[0])
-                    return True
-                else:
-                    return False
+        try: 
+            self.dbname["Load_Pin"].insert_one(data)
+        except Exception:
+            pass
+            ##print("Duplicated LoadPin entry on T: "+data["T"]+", Pin: "+str(data["LoadPin"]))
     
     def storeTrack(self, data):
-        newData = []
-        keys = list(data["T"].keys())
-        if len(keys) > 0:
-            for i in keys:
-                if self.dbname["Track"].find_one({"T": data["T"][i], "Azth": data["Azth"][i], "ZAth": data["ZAth"][i], "vsT0": data["vsT0"][i], "Tth": data["Tth"][i]}) == None:
-                    rowData = {}
-                    rowData["T"] = data["T"][i]
-                    rowData["Azth"] = data["Azth"][i]
-                    rowData["ZAth"] = data["ZAth"][i]
-                    rowData["vsT0"] = data["vsT0"][i]
-                    rowData["Tth"] = data["Tth"][i]
-                    newData.append(rowData)
-            if len(newData)>1:
-                self.dbname["Track"].insert_many(newData)
-                return True
-            else:
-                if len(newData) == 1:
-                    self.dbname["Track"].insert_one(newData[0])
-                    return True
-                else:
-                    return False
+        try:
+            self.dbname["Track"].insert_one(data)
+        except Exception:
+            pass
+            #print("Duplicated Track entry on T: "+str(data["T"]))
+                   
 
     def storeTorque(self, data):
-        newData = []
-        keys = list(data["T"].keys())
-        if len(keys) > 0:
-            for i in keys:
-                rowData = {}
-                rowData["T"] = data["T"][i]
-                rowData["Az1_mean"] = data["Az1_mean"][i]
-                rowData["Az1_min"] = data["Az1_min"][i]
-                rowData["Az1_max"] = data["Az1_max"][i]
-                rowData["Az2_mean"] = data["Az2_mean"][i]
-                rowData["Az2_min"] = data["Az2_min"][i]
-                rowData["Az2_max"] = data["Az2_max"][i]
-                rowData["Az3_mean"] = data["Az3_mean"][i]
-                rowData["Az3_min"] = data["Az3_min"][i]
-                rowData["Az3_max"] = data["Az3_max"][i]
-                rowData["Az4_mean"] = data["Az4_mean"][i]
-                rowData["Az4_min"] = data["Az4_min"][i]
-                rowData["Az4_max"] = data["Az4_max"][i]
-                rowData["El1_mean"] = data["El1_mean"][i]
-                rowData["El1_min"] = data["El1_min"][i]
-                rowData["El1_max"] = data["El1_max"][i]
-                rowData["El2_mean"] = data["El2_mean"][i]
-                rowData["El2_min"] = data["El2_min"][i]
-                rowData["El2_max"] = data["El2_max"][i]
-
-                if self.dbname["Torque"].find_one(rowData) == None:
-                    newData.append(rowData)
-            if len(newData)>1:
-                self.dbname["Torque"].insert_many(newData)
-                return True
-            else:
-                if len(newData) == 1:
-                    self.dbname["Torque"].insert_one(newData[0])
-                    return True
-                else:
-                    return False
+        try:
+            self.dbname["Torque"].insert_one(data)
+        except Exception:
+            pass
+            #print("Duplicated Torque entry on T: "+str(data["T"]))
+        
+            
 
     def storeAccuracy(self, data):
-        newData = []
-        keys = list(data["T"].keys())
-        if len(keys) > 0:
-            for i in keys:
-                rowData = {}
-                rowData["T"] = data["T"][i]
-                rowData["Azmean"] = data["Azmean"][i]
-                rowData["Azmin"] = data["Azmin"][i]
-                rowData["Azmax"] = data["Azmax"][i]
-                rowData["Zdmean"] = data["Zdmean"][i]
-                rowData["Zdmin"] = data["Zdmin"][i]
-                rowData["Zdmax"] = data["Zdmax"][i]
-
-                if self.dbname["Accuracy"].find_one(rowData) == None:
-                    newData.append(rowData)
-
-            if len(newData)>1:
-                self.dbname["Accuracy"].insert_many(newData)
-                return True
-            else:
-                if len(newData) == 1:
-                    self.dbname["Accuracy"].insert_one(newData[0])
-                    return True
-                else:
-                    return False
+        try:
+            self.dbname["Accuracy"].insert_one(data)
+        except Exception:
+            pass
+            #print("Duplicated Accuracy entry on T: "+str(data["T"]))
             
     def storeBendModel(self, data):
-        newData = []
-        keys = list(data["T"].keys())
-        if len(keys) > 0:
-            for i in keys:
-                rowData = {}
-                rowData["T"] = data["T"][i]
-                rowData["AzC"] = data["AzC"][i]
-                rowData["ZAC"] = data["ZAC"][i]
-
-                if self.dbname["Bend_Model"].find_one(rowData) == None:
-                    newData.append(rowData)
-            if len(newData)>1:
-                self.dbname["Bend_Model"].insert_many(newData)
-                return True
-            else:
-                if len(newData) == 1:
-                    self.dbname["Bend_Model"].insert_one(newData[0])
-                    return True
-                else:
-                    return False
+        try:
+            self.dbname["Bend_Model"].insert_one(data)
+        except Exception:
+            pass
+            #print("Duplicated Bend Model entry on T: "+str(data["T"]))
+                   
             
     def checkDuplicatedLogs(self, Time, Command, Date):
         commandId = self.dbname["Commands"].find_one({"name": Command}, {"name": 0})
@@ -350,7 +234,6 @@ class MongoDb:
             return False
     def checkDuplicatedValues(self, type, date, time):
         typeId = self.dbname["Types"].find_one({"name": type}, {"name": 0})
-        print(type)
         typeId = str(typeId["_id"])
         if self.dbname["Data"].find_one({"type": type, "Sdate": date, "Stime": time}) != None:
             return True
@@ -406,9 +289,9 @@ class MongoDb:
         result["LoadPin"] = {}
         result["Load"] = {}
         index = 0
-        tmin = str(tmin).replace(".0", "")+"000"
-        tmax = str(tmax).replace(".0", "")+"000"
-        for data in self.dbname["Load_Pin"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+        tmin = str(tmin)
+        tmax = str(tmax)
+        for data in self.dbname["Load_Pin"].find({'T': {'$gte': int(tmin), '$lte': int(tmax)}}):
             dataF = float(data["T"])
             dataF = dataF/1000
             result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)

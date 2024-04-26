@@ -93,6 +93,7 @@ const fetchLatestData = async(date = null) => {
             loadFilters()
             fillLogs()
         }else{
+            console.log(generalData.data.Message)
             contenSection.innerHTML = ""
             filtersSection.innerHTML = ""
             filtersSection.classList = ["filters"]

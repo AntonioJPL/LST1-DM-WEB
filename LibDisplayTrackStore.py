@@ -29,6 +29,8 @@ import numpy as np
 import requests
 import asyncio
 
+from DriveMonitoringApp.mongo_utils import MongoDb
+
 
 shifttemps=0
 
@@ -60,7 +62,7 @@ azrad_ok=[]
 zd_ok=[]
 erraz_ok=[]
 errzd_ok=[]
-
+operationTimes = []
 #Not used variable
 valdif=60.
 
@@ -193,7 +195,7 @@ def getPos(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3) #Compares maskt2 and maskt3 values
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2 #No idea
     
-    df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc)) #No idea
+    df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
 
 #    dfBM = pd.read_csv(filename,sep=' ',header=None)
 #    dfBM.columns=['T','AzC','ZAC']
@@ -211,7 +213,8 @@ def getPos(filename,tmin,tmax):
 #    df['Az'] = df['Az']+dfBM['AzC']
 #    df['ZA'] = df['ZA']+dfBM['ZAC']
     
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storePosition(MongoDb, rows)
 
 #Used in GenerateFig.  
 def getBM(filename,tmin,tmax):    
@@ -229,7 +232,8 @@ def getBM(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3)
     dfBM['T'] = dfBM['T'] + maskT1*-2 + maskT2*-2
     #dfBM['T'] = dfBM['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc)) #Change made by Antonio, check if it is correct
-    return dfBM
+    for rows in dfBM.to_dict('records'):
+        MongoDb.storeBendModel(MongoDb, rows)
                
 def getPrecision(filename,tmin,tmax):    
     
@@ -266,7 +270,8 @@ def getPrecision(filename,tmin,tmax):
     mask0_2 = df['Zdmean']!=0. #This is why data is being ignored
     mask0 = np.logical_and(mask0_2,mask0_1)
     df = df[mask0]
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storeAccuracy(MongoDb, rows)
 
 #Works as getDate but returns date and line of the found cmdstring
 def getDateAndLine(filename,cmdstring):
@@ -305,7 +310,8 @@ def getTorqueNew(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3)
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storeTorque(MongoDb, rows)
     
 ##### READ TRACK VALUES
 def getTrackNew(filename3,tmin,tmax):
@@ -323,7 +329,8 @@ def getTrackNew(filename3,tmin,tmax):
     mask0 = df['vsT0']!=0
     df = df[mask0]
     df['Tth'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    return df
+    for rows in df.to_dict('records'):
+        MongoDb.storeTrack(MongoDb, rows)
     #print("getTrack %s %s %s %s"%(filename3,tmin,tmax,ttrack))
 
 
@@ -339,24 +346,23 @@ def getLoadPin(filename2,tmin,tmax):
 
     f2 = open(filename2, "r") 
     df=pd.DataFrame(columns=['T','LoadPin','Load'])
-
     lp=0
     lpval=0
+    values = 0
     for line in f2.readlines():
         val=line.split(' ')
         dval = int(val[0])
         dateval = datetime.fromtimestamp(dval)
         lp=int(val[1])
-        """ if(lp!=107 and lp!=207):
-            continue """
-        if dval>tmin and dval<tmax:
-            for v in range(2,len(val)):
-                dvalinc = int(dval) + (v-2)*0.1
-                dateval = datetime.fromtimestamp(dvalinc, tz=pytz.utc)
-                lpval=int(val[v].replace("\n",""))
-                df2=pd.DataFrame({'T':[dateval],'LoadPin':[lp],'Load':[lpval]})
-                df = pd.concat([df2,df],ignore_index=True)
-    return df
+        #if(lp!=107 and lp!=207):
+            #continue 
+        for v in range(2,len(val)):
+            values += 1
+            dvalinc = int(dval) + (v-2)*0.1
+            #dateval = datetime.fromtimestamp(dvalinc, tz=pytz.utc) #I have to do this later on Django
+            lpval=int(val[v].replace("\n",""))
+            MongoDb.storeLoadPin(MongoDb, {'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
+    #return df
 #Used in checkDate and checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
     
@@ -366,76 +372,44 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
     else:
         addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S')) """
 
+    
     #Position log.
     dfpos = getPos(filename,tmin,tmax)
     #print(dfpos)
-
+    
     
     #Precision log
 
     dftrack = None
     dfacc = None
+    
     if ttrack != 0:
         dftrack = getTrackNew(filename3,tmin,tmax)
         dfacc = getPrecision(filename.replace("DrivePosition","Accuracy"),tmin,tmax)
         #print(dftrack)
-    
     dfloadpin = getLoadPin(filename2,tmin,tmax)
     #print(dfloadpin)
     
-    dfbm = None
     if ra is not None:
         dfbm = getBM(filename.replace('DrivePosition','BendingModelCorrection'),tmin,tmax)
         #print(dfpos)
+    
 
     #getTorque(filename4,tmin,tmax)
+  
     dftorque = getTorqueNew(filename4,tmin,tmax)
+    
     #print(dftorque)
-    dataLine = {}
-    dataLine["type"] = []
-    dataLine["Sdate"] = []
-    dataLine["Stime"] = []
-    dataLine["Edate"] = []
-    dataLine["Etime"] = []
-    dataLine["RA"] = []
-    dataLine["DEC"] = []
-    dataLine["file"] = []
-    dataLine["addText"] = []
-    dataLine["position"] = []
-    dataLine["loadPin"] = []
-    dataLine["track"] = []
-    dataLine["torque"] = []
-    dataLine["accuracy"] = []
-    dataLine["bendModel"] = []
-    dataLine["type"].append(type)
-    dataLine["Stime"].append(str(datetime.fromtimestamp(tmin).strftime("%H:%M:%S")))
-    dataLine["Sdate"].append(str(datetime.fromtimestamp(tmin).strftime("%Y-%m-%d")))
-    dataLine["Etime"].append(str(datetime.fromtimestamp(tmax).strftime("%H:%M:%S")))
-    dataLine["Edate"].append(str(datetime.fromtimestamp(tmax).strftime("%Y-%m-%d")))
-    dataLine["RA"].append(ra)
-    dataLine["DEC"].append(dec)
-    dataLine["file"].append(figname)
-    dataLine["addText"].append(addtext)
-    if dfpos is not None:
-        dataLine["position"].append(dfpos.to_json())
-    if dfloadpin is not None:
-        dataLine["loadPin"].append(dfloadpin.to_json())
-    if dftrack is not None:
-        dataLine["track"].append(dftrack.to_json())
-    if dftorque is not None:
-        dataLine["torque"].append(dftorque.to_json())
-    #FigureTrack(tmin,tmax,cmd_status,figname,addtext,None,dfpos,dfloadpin,dftrack,dftorque)
-    if dfacc is not None:
-        dataLine["accuracy"].append(dfacc.to_json())
-        #FigAccuracyTime(figname,addtext,None,dfacc)
-#        FigAccuracyHist(figname,None,dfacc)
-    if dfbm is not None:
-        dataLine["bendModel"].append(dfbm.to_json())
-        #FigRADec(figname,None,dfpos,dfbm,ra,dec,dfacc,dftrack)  
-    #print(dfacc)
-    data = []
-    data.append(dataLine)
-    req = requests.post("http://127.0.0.1:8000/storage/storeData", json=data)
+    start = datetime.fromtimestamp(tmin).strftime("%Y-%m-%d %H:%M:%S").split(" ")
+    end = datetime.fromtimestamp(tmax).strftime("%Y-%m-%d %H:%M:%S").split(" ")
+    print(operationTimes)
+    if len(operationTimes)>0:
+        file = figname.split("/")
+        imageSplitEnd = file[-1].split(".")
+        finalImage = file[-4]+"/"+file[-3]+"/"+file[-2]+"/"+imageSplitEnd[0]
+        MongoDb.storeGeneralData(MongoDb, {"type": type, "Sdate": start[0], "Stime": start[1], "Edate": end[0], "Etime": end[1], "RA": ra, "DEC": dec, "file": finalImage, "addText": addtext})
+   
+    
 
         
     
@@ -849,7 +823,6 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
     
 
 
-
     # Loop over beginning
     for k in range(len(beg)):
         endarray=[9999999999,9999999999,9999999999]
@@ -877,7 +850,6 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
         end_ok.append(min(endarray))
         cmd_status.append(endarray.index(min(endarray)))
 
-    
     figpre = figname
     trackok=[]
     trackok.clear()
@@ -913,7 +885,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
     raok2 = None
     decok2 = None
     #print(type)
-
+    
     if lastone == 0:
         #for i in range(0,1):
         for i in range(len(end_ok)):
@@ -1009,8 +981,13 @@ def endhtmlfile(logsorted):
     action=""
     actiondate=0
     data = {}
+    operationTmin = None
+    operationTmax = datetime.timestamp(logsorted[len(logsorted)-1][0])
+    operationDate = logsorted[0][0].strftime("%Y-%m-%d")
     commandPosition = None
     for i in range(0,len(logsorted)):
+        #TODO - Fix the finish over the stop !!
+      
         if logsorted[i][1].find("action error")!= -1 and commandPosition != None :
             logs[commandPosition]["LogStatus"] = "Error"
             commandPosition = None
@@ -1046,11 +1023,19 @@ def endhtmlfile(logsorted):
 
         data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
         data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
+        if operationTmin == None and commandPosition != None:
+            operationTmin = datetime.timestamp(logsorted[commandPosition][0])
         logs.append(data)
         data = {}
+    for element in logs:
+        if element["Command"] != "Drive":
+            MongoDb.storeLogs(MongoDb, element)
+    MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
+    operationTimes.append(operationTmin)
+    operationTimes.append(operationTmax)
     #print(logs)
-    req = requests.post("http://127.0.0.1:8000/storage/storeLogs", json=logs)
-    print(req.json()["Message"])
+    #req = requests.post("http://127.0.0.1:8000/storage/storeLogs", json=logs)
+    #print(req.json()["Message"])
 
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
@@ -1062,8 +1047,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
 
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
 
-    req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
-    lastDate = req.json()["lastDate"]
+    #req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
+    """ lastDate = req.json()["lastDate"]
     if lastDate is not True:
         print("---------- The System is not up to date. Last data date on MongoDB: "+lastDate+" -----------")
         print("Running missing days ...")
@@ -1079,7 +1064,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         while parsedLastDBDate < parsedActualDate:
             asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
             print(parsedLastDBDate)
-            parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
+            parsedLastDBDate = parsedLastDBDate + timedelta(days=1) """
 
     
     #Genereal
@@ -1127,7 +1112,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #generallogsorted.hola #Loop-break
     #repos = getRepos(filename,"Taking into account displacement")
     #checkallactions(generallogsorted)
-    #endhtmlfile(generallogsorted)
+    endhtmlfile(generallogsorted)
     #checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",None,0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
     #UNCOMMENT THIS !!!
     #endhtmlfile(generallogsorted)
@@ -1174,8 +1159,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             
             #print(req.json()["Message"])
          
-    req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-    print(req.json()["Message"])
+    #req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+    #print(req.json()["Message"])
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

@@ -52,8 +52,6 @@ def storeLogs(request):
 def storeData(request):
     #TODO - Needs optimization as it takes a LOT of time to store all the data
     if(request.method == 'POST'):
-        print("START TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         body = json.loads(str(request.body,encoding='utf-8'))
         generalData = {}
         generalData["type"] = body[0]["type"][0]
@@ -69,51 +67,25 @@ def storeData(request):
         generalData["file"] = finalImage
         generalData["addText"] = body[0]["addText"][0]
         #TODO - Store the rest of the data
-        print("START POS TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if len(body[0]["position"]) != 0:
             position = json.loads(body[0]["position"][0])
             database.storePosition(database, position)
-        print("END POS TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
-        print("START LP TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if len(body[0]["loadPin"]) != 0:
             pinData = json.loads(body[0]["loadPin"][0])
             database.storeLoadPin(database, pinData)
-        print("END LP TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
-        print("START TRACK TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if len(body[0]["track"]) != 0:
             track = json.loads(body[0]["track"][0])
             database.storeTrack(database, track)
-        print("END TRACK TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
-        print("START TORQUE TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if len(body[0]["torque"]) != 0:
             torque = json.loads(body[0]["torque"][0])
             database.storeTorque(database, torque)
-        print("END TORQUE TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
-        print("START ACC TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if len(body[0]["accuracy"]) != 0:
             accuracy = json.loads(body[0]["accuracy"][0])
             database.storeAccuracy(database, accuracy)
-        print("END ACC TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
-        print("START BM TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if len(body[0]["bendModel"]) != 0:
             bendModel = json.loads(body[0]["bendModel"][0])
             database.storeBendModel(database, bendModel)
-        print("END BM TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         correct = True
-        print("END TIME")
-        print(datetime.now().strftime("%H:%M:%S"))
         if database.checkDuplicatedValues(database, generalData["type"], generalData["Sdate"], generalData["Stime"]) == False:
             correct = database.storeGeneralData(database, generalData)
         else:
@@ -321,7 +293,9 @@ def generatePlots(date):
 
 def showTestView(request):
     if request.method == "GET":
-        generatePlots("2024-02-02")
+        generatePlots("2024-02-07")
+        #pins = database.getAllLoadPin(database, "2024-02-03")
+        #print(pins)
         return render(request, "storage/testPLot.html")
     
 @csrf_exempt
@@ -342,3 +316,13 @@ def checkUpToDate(request):
         dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
         print(dateTime)
         return database.checkDates(database, dateTime)
+    
+def getLoadPins(request):
+    if request.method == "GET":
+        date = database.getLatestDate(database)
+        return database.getCablesPlots(database, date)
+    if request.method == "POST":
+        userdict = json.loads(str(request.body,encoding='utf-8'))
+        userdict = userdict[0][0]
+        dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
+        return database.getCablesPlots(database, dateTime)

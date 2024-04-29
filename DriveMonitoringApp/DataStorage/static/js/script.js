@@ -114,17 +114,9 @@ const fetchLatestData = async(date = null) => {
             serverRes = await fetch("http://127.0.0.1:8000/storage/getLoadPins")
             .then(response => response.json())
         }
-        if(generalData.data.Message == null){
-            initializeFiltersSection()
-            generateStructure()
-            showAllData(generalData.data)
-            data = serverRes.data
-            filters = serverRes.filters
-            summaryData = data.filter(element => element.LogStatus != null)
+        if(serverRes.Message == null){
             startInputButtons()
-            startSummary()
-            loadFilters()
-            fillLogs()
+            startPlotSections()
         }else{
             contenSection.innerHTML = ""
             filtersSection.innerHTML = ""
@@ -377,6 +369,9 @@ const startSummary = ()=>{
  */
 const initializeFiltersSection = ()=>{
     filtersSection = document.querySelector("div.filters")
+    if(filtersSection == null){
+        filtersSection = document.createElement("div")
+    }
     filtersSection.innerHTML = ""
     filtersSection.classList.add("w-[25vw]", "fixed", "left-[2rem]", "top-[7.75rem]", "border-r-[#3e3f3a]", "border-r-[0.15rem]", "border-opacity-50", "h-[15rem]", "flex", "flex-col", "items_center")
     filtersCard = document.createElement("div")
@@ -801,4 +796,22 @@ const changeTitleAndFetch = (value)=>{
     title.innerHTML = ""
     title.appendChild(document.createTextNode(titleParts[0]+"-"+titleParts[1]+"-"+value))
     fetchLatestData(value)
+}
+
+const startPlotSections = ()=>{
+    let plotSection = document.querySelector("div.plotsArea")
+    let plotSec1 = document.createElement("div")
+    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg")
+    let title = document.createElement("h3")
+    title.appendChild(document.createTextNode("10X Cables"))
+    title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
+    plotSec1.appendChild(title)
+    let plotSec2 = document.createElement("div")
+    plotSec2.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg")
+    let title2 = document.createElement("h3")
+    title2.appendChild(document.createTextNode("20X Cables"))
+    title2.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
+    plotSec2.appendChild(title2)
+    plotSection.appendChild(plotSec1)
+    plotSection.appendChild(plotSec2)
 }

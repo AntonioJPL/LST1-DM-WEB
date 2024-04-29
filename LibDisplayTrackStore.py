@@ -214,6 +214,8 @@ def getPos(filename,tmin,tmax):
 #    df['ZA'] = df['ZA']+dfBM['ZAC']
     
     for rows in df.to_dict('records'):
+        rows["T"] = str(rows["T"].timestamp()).replace(".", "")
+        rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
         MongoDb.storePosition(MongoDb, rows)
 
 #Used in GenerateFig.  
@@ -271,6 +273,8 @@ def getPrecision(filename,tmin,tmax):
     mask0 = np.logical_and(mask0_2,mask0_1)
     df = df[mask0]
     for rows in df.to_dict('records'):
+        rows["T"] = str(rows["T"].timestamp()).replace(".", "")
+        rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
         MongoDb.storeAccuracy(MongoDb, rows)
 
 #Works as getDate but returns date and line of the found cmdstring
@@ -311,6 +315,8 @@ def getTorqueNew(filename,tmin,tmax):
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
     for rows in df.to_dict('records'):
+        rows["T"] = str(rows["T"].timestamp()).replace(".", "")
+        rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
         MongoDb.storeTorque(MongoDb, rows)
     
 ##### READ TRACK VALUES
@@ -330,13 +336,15 @@ def getTrackNew(filename3,tmin,tmax):
     df = df[mask0]
     df['Tth'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
     for rows in df.to_dict('records'):
+        rows["Tth"] = str(rows["Tth"].timestamp()).replace(".", "")
+        rows["Tth"] = int(rows["Tth"].ljust(2+len(rows["Tth"]), '0'))
         MongoDb.storeTrack(MongoDb, rows)
     #print("getTrack %s %s %s %s"%(filename3,tmin,tmax,ttrack))
 
 
 ##### READ LOAD PIN
-def getLoadPin(filename2,tmin,tmax):
-    #print("getLoadPin %s %s %s"%(filename2,tmin,tmax))
+def getLoadPin(filename2):
+    print("getLoadPin %s"%(filename2))
     t0=0
     dt=0
     
@@ -387,7 +395,6 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
         dftrack = getTrackNew(filename3,tmin,tmax)
         dfacc = getPrecision(filename.replace("DrivePosition","Accuracy"),tmin,tmax)
         #print(dftrack)
-    dfloadpin = getLoadPin(filename2,tmin,tmax)
     #print(dfloadpin)
     
     if ra is not None:
@@ -1046,10 +1053,14 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     generallog.clear()
 
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
-
-    #req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
-    """ lastDate = req.json()["lastDate"]
-    if lastDate is not True:
+    lastDate = None
+    try:
+        req = requests.post("http://127.0.0.1:8000/storage/checkUpToDate", json=[firstData])
+        lastDate = req.json()["lastDate"]
+    except Exception: 
+        print("Could not check if data is up to date. Storing actual date...")
+        lastDate = None
+    if lastDate is not True and lastDate is not None:
         print("---------- The System is not up to date. Last data date on MongoDB: "+lastDate+" -----------")
         print("Running missing days ...")
         dateFormat = ("%Y/%m/%d")
@@ -1061,12 +1072,10 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         lastDate = lastDate.replace("-", "/")
         parsedLastDBDate = datetime.strptime(lastDate, dateFormat)
         parsedActualDate = datetime.strptime(actualDate, dateFormat)
-        while parsedLastDBDate < parsedActualDate:
+        while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):
+            parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
             asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
-            print(parsedLastDBDate)
-            parsedLastDBDate = parsedLastDBDate + timedelta(days=1) """
 
-    
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
     trackcmdinitiale = getDate(filename,"Start Tracking") #Not used?
@@ -1159,8 +1168,12 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             
             #print(req.json()["Message"])
          
-    #req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-    #print(req.json()["Message"])
+    getLoadPin(filename3)
+    try: 
+        req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+        print(req.json()["Message"])
+    except Exception:
+        print("Plot was not generated because there is no conection to Django or there where a problem.")
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

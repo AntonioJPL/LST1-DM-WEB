@@ -27,6 +27,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             mask107 = dfloadpin[i]['LoadPin']==107
             mask207 = dfloadpin[i]['LoadPin']==207
             loadPinSorted = dfloadpin[i].sort_values(by=["T"])
+    
             if generatedCableLegend == False:
                 fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", mode="lines"))
                 fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", mode="lines"))
@@ -38,6 +39,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
 
         if dfpos[i] is not None and dfpos[i].empty != True:
             dfposSorted = dfpos[i].sort_values(by=["T"])
+
             if generatedPositionLegend == False:
                 fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth", mode="lines"))
                 fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle", mode="lines"))
@@ -49,6 +51,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
         dftrackSorted = None
         if dftrack[i] is not None and dftrack[i].empty != True:
             dftrackSorted = dftrack[i].sort_values(by=["T"])
+
             if generatedPositionTTHLegend == False:
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", mode="lines"))
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", mode="lines"))
@@ -325,3 +328,21 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
         time = date[0].split("+")
         fig2.show() """
         #fig2.write_html(path.replace(".html", "_"+time[0]+"_"+"_SkyCoord2.html"))
+
+def FigureTrack(dfloadpin, path):
+    fig = go.Figure()
+    generatedCableLegend = False
+    for i in range(0, len(dfloadpin)):
+        if dfloadpin[i] is not None and dfloadpin[i].empty != True:
+            mask107 = dfloadpin[i]['LoadPin']==107
+            mask207 = dfloadpin[i]['LoadPin']==207
+            loadPinSorted = dfloadpin[i].sort_values(by=["T"])
+    
+            if generatedCableLegend == False:
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", mode="lines"))
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", mode="lines"))
+                generatedCableLegend = True
+            else:
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", showlegend=False, mode="lines"))
+                fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", showlegend=False, mode="lines"))
+

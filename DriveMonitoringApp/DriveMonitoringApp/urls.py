@@ -35,6 +35,7 @@ urlpatterns = [
     path('storage/start', Sv.start),
     path('storage/plotGeneration', Sv.generateDatePlots),
     path('storage/checkUpToDate', Sv.checkUpToDate),
+    path('storage/getLoadPins', Sv.getLoadPins),
 
 
 

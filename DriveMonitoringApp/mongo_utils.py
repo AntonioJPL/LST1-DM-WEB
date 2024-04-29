@@ -276,7 +276,7 @@ class MongoDb:
         index = 0
         tmin = str(tmin).replace(".0", "")+"000"
         tmax = str(tmax).replace(".0", "")+"000"
-        for data in self.dbname["Position"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
+        for data in self.dbname["Position"].find({'T': {'$gte': int(tmin), '$lte': int(tmax)}}):
             result["T"][index] = datetime.fromtimestamp(int(str(data["T"])[:-3]), tz=pytz.utc)
             result["Az"][index] = data["Az"]
             result["ZA"][index] = data["ZA"]
@@ -291,7 +291,27 @@ class MongoDb:
         index = 0
         tmin = str(tmin)
         tmax = str(tmax)
-        for data in self.dbname["Load_Pin"].find({'T': {'$gte': int(tmin), '$lte': int(tmax)}}):
+        for data in self.dbname["Load_Pin"].find({'T': {'$gte': tmin, '$lte': tmax}, "LoadPin": {"$in": [207,107]}}):
+            dataF = float(data["T"])
+            result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
+            result["LoadPin"][index] = data["LoadPin"]
+            result["Load"][index] = data["Load"]
+            index += 1
+        return result
+    def getAllLoadPin(self, date):
+        #TODO - Find how to query in MongoDB to get the items
+        result = {}
+        result["T"] = {}
+        result["LoadPin"] = {}
+        result["Load"] = {}
+        index = 0
+        print(date)
+        tmin = datetime.strptime(date+" 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f').timestamp()
+        tmax = datetime.strptime(date+" 23:59:59.900000", '%Y-%m-%d %H:%M:%S.%f').timestamp()
+        tmin = str(tmin)
+        tmax = str(tmax)
+        print(tmax)
+        for data in self.dbname["Load_Pin"].find({'T': {'$gte': tmin, '$lte': tmax}}):
             dataF = float(data["T"])
             dataF = dataF/1000
             result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)

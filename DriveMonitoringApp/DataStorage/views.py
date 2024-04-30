@@ -21,6 +21,7 @@ from . import figuresFunctions
 
 import plotly.graph_objects as go
 from django.contrib.staticfiles import finders
+import os
 
 database = MongoDb
 
@@ -141,11 +142,15 @@ def getLogs(request):
                 return JsonResponse({"Message": "There is no data to show"})
 @csrf_exempt
 #Function that returns the data from the database in case there is.
-def getData(request):
+def getData(request, date = None):
     if request.method == "GET":
         if database.isData(database) == True:
-            data = {"data": database.listData(database, database.getLatestDate(database))}
-            return JsonResponse(data)
+            if(date is None):
+                data = {"data": database.listData(database, database.getLatestDate(database))}
+                return JsonResponse(data)
+            else:
+                data = {"data": database.listData(database, date)}
+                return JsonResponse(data)
         else:
             return JsonResponse({"Message": "There is no data to show"})
     else:
@@ -170,6 +175,8 @@ def generatePlots(date):
         generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"], generalGotopos["addText"], generalGotopos["RA"], generalGotopos["DEC"] = ([] for i in range(10))
         types = database.getOperationTypes(database)
         foundType = None
+
+        
         for element in data:
             for type in types:
                 if str(type["_id"]) == element["type"]:
@@ -185,6 +192,7 @@ def generatePlots(date):
             #tmin = operation[0]["Tmin"]
             #tmax = operation[0]["Tmax"] 
             #cmd_status = 0
+            print("Getting data from mongo")
             position = database.getPosition(database, tmin, tmax)
             loadPin = database.getLoadPin(database, tmin, tmax)
             track = database.getTrack(database, tmin, tmax)
@@ -192,13 +200,14 @@ def generatePlots(date):
             accuracy = database.getAccuracy(database, tmin, tmax)
             bendModel = database.getBM(database, tmin, tmax)
             dfpos = pd.DataFrame.from_dict(position)
-            dfloadpin = pd.DataFrame.from_dict(loadPin) 
+            dfloadpin = pd.DataFrame.from_dict(loadPin)
             dftrack = pd.DataFrame.from_dict(track) 
             dftorque = pd.DataFrame.from_dict(torque) 
             dfbm = pd.DataFrame.from_dict(bendModel) 
             dfacc = pd.DataFrame.from_dict(accuracy)
             file = element["file"].split("/")
             file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+            print("Making sections")
             if foundType == "Track":
                 generalTrack["dfpos"].append(dfpos)
                 generalTrack["dfloadpin"].append(dfloadpin)
@@ -255,22 +264,31 @@ def generatePlots(date):
                 generalGotopos["addText"] = element["addText"]
                 generalGotopos["RA"].append(element["RA"])
                 generalGotopos["DEC"].append(element["DEC"])
-        figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
-        figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
-        figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
-        figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
+        print("Generating figures")
+        #figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+        #figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+        #figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+        #figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
         if len(generalTrack["dfacc"]) != 0:
             print()
-            figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
+            #figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
         if len(generalParkin["dfacc"]) != 0:
             print()
-            figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
+            #figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
         if len(generalParkout["dfacc"]) != 0:
             print()
-            figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
+            #figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
         if len(generalGotopos["dfacc"]) != 0:
             print()
-            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+            #figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+        path = generalTrack["name"]
+        pathParts = path.split("/")
+        newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
+        file = finders.find(newPath)
+        if file is None:
+            os.mkdir(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
+            #print(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
+        figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), file+"/"+"LoadPin_"+date+".html")
         """ if len(generalTrack["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalTrack["dfpos"], generalTrack["dfbm"], generalTrack["RA"], generalTrack["DEC"], generalTrack["dfacc"], generalTrack["dftrack"], generalTrack["name"])
         if len(generalParkin["dfbm"]) != 0:
@@ -281,19 +299,12 @@ def generatePlots(date):
             figuresFunctions.FigureRADec(generalGotopos["dfpos"], generalGotopos["dfbm"], generalGotopos["RA"], generalGotopos["DEC"], generalGotopos["dfacc"], generalGotopos["dftrack"], generalGotopos["name"])
          """
 
-        #figuresFunctions.FigureTrack(tmin, tmax, cmd_status, firstElement["addText"], dfpos, dfloadpin, dftrack, dftorque)
-        if dfbm is not None:
-            print("There is DFBM")
-            #figuresFunctions.FigureRADec(dfpos, dfbm, firstElement["RA"], firstElement["DEC"], dfacc, dftrack)
-        if dfacc is not None:
-            print("There is DFACC")
-            #figuresFunctions.FigAccuracyTime(firstElement["addText"], dfacc)
-        
-        #FigureTrack()
+
 
 def showTestView(request):
     if request.method == "GET":
-        generatePlots("2024-02-07")
+        generatePlots("2024-02-03")
+        #figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, "2024-02-03"), "html/Log_cmd.2024-02-03/LoadPin/LoadPin_20240203.html")
         #pins = database.getAllLoadPin(database, "2024-02-03")
         #print(pins)
         return render(request, "storage/testPLot.html")
@@ -317,12 +328,12 @@ def checkUpToDate(request):
         print(dateTime)
         return database.checkDates(database, dateTime)
     
+@csrf_exempt
 def getLoadPins(request):
     if request.method == "GET":
         date = database.getLatestDate(database)
-        return database.getCablesPlots(database, date)
+        return database.getLPPlots(database, date)
+
     if request.method == "POST":
         userdict = json.loads(str(request.body,encoding='utf-8'))
-        userdict = userdict[0][0]
-        dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
-        return database.getCablesPlots(database, dateTime)
+        return database.getLPPlots(database, userdict["date"])

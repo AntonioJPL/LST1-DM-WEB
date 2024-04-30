@@ -123,8 +123,10 @@ class MongoDb:
                 foundElement = list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}, {"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
                 if len(foundElement) > 0:
                     file = foundElement[0]["file"].split("/")
+                    print(file[0]+"/"+file[1]+"/"+file[2])
                     filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
                     file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+                    print(file)
                     files = glob.glob(file+"/"+filename+"*")
                     plot["file"] = []
                     for i in range(0, len(files)):
@@ -208,8 +210,6 @@ class MongoDb:
             pass
             #print("Duplicated Torque entry on T: "+str(data["T"]))
         
-            
-
     def storeAccuracy(self, data):
         try:
             self.dbname["Accuracy"].insert_one(data)
@@ -266,7 +266,7 @@ class MongoDb:
     def isData(self):
         return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
     def getFirstData(self):
-        return self.dbname["Data"].find_one()
+        return self.dbname["Data"].find_one({"Sdate": "2024-02-03"})
     def getPosition(self, tmin, tmax):
         #TODO - Find how to query in MongoDB to get the items
         result = {}
@@ -305,15 +305,13 @@ class MongoDb:
         result["LoadPin"] = {}
         result["Load"] = {}
         index = 0
-        print(date)
         tmin = datetime.strptime(date+" 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f').timestamp()
         tmax = datetime.strptime(date+" 23:59:59.900000", '%Y-%m-%d %H:%M:%S.%f').timestamp()
         tmin = str(tmin)
         tmax = str(tmax)
-        print(tmax)
         for data in self.dbname["Load_Pin"].find({'T': {'$gte': tmin, '$lte': tmax}}):
             dataF = float(data["T"])
-            dataF = dataF/1000
+            dataF = dataF
             result["T"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
             result["LoadPin"][index] = data["LoadPin"]
             result["Load"][index] = data["Load"]
@@ -449,3 +447,24 @@ class MongoDb:
             return JsonResponse({"lastDate": True})
         else: 
             return JsonResponse({"lastDate": lastElementFound["Date"]})
+    def getLPPlots(self, date):
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        start = datetime.fromtimestamp(operation[0]["Tmin"])
+        start = str(start).split(" ")
+        data = self.dbname["Data"].find_one({"Sdate": date, "Stime": {"$gte": start[1]}})
+        path = data["file"]
+        pathParts = path.split("/")
+        path = path.replace(pathParts[-2]+"/"+pathParts[-1], "LoadPin")
+        file = finders.find(path)
+        if file is not None:
+            print(file)
+            files = glob.glob(file+"/"+"LoadPin_"+date+"*")
+            print(files)
+            plots = []
+            for i in range(0, len(files)):
+                files[i] = files[i].split("/")
+                files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                plots.append(files[i])
+            return JsonResponse({"plots": plots})
+        else:
+            return JsonResponse({"Message": "There is no data to show"})

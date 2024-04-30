@@ -1173,7 +1173,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
         print(req.json()["Message"])
     except Exception:
-        print("Plot was not generated because there is no conection to Django or there where a problem.")
+        print("Plot was not generated because there is no conection to Django or there was a problem.")
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

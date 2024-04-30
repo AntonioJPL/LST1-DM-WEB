@@ -28,6 +28,8 @@ let sectionBody = null
 let filtersCard = null
 let filtersSection = null
 let sectionTitle = null
+let graphicContents = null
+let plotSection = null
 const logsData = []
 const summaryParsedData = []
 
@@ -67,7 +69,7 @@ const generateStructure = ()=>{
 const fetchLatestData = async(date = null) => {
     let serverRes = null
     let urlParts = currentUrl.split("/")
-    if(urlParts[urlParts.length-1] == "driveMonitoring"){
+    if(urlParts[urlParts.length-2] == "driveMonitoring"){
         summaryParsedData.splice(0, summaryParsedData.length)
         logsData.splice(0, logsData.length)
         if(date != null){
@@ -82,6 +84,7 @@ const fetchLatestData = async(date = null) => {
             .then(response => response.json())
         }
         if(generalData.data.Message == null){
+            console.log(generalData)
             initializeFiltersSection()
             generateStructure()
             showAllData(generalData.data)
@@ -114,24 +117,24 @@ const fetchLatestData = async(date = null) => {
             serverRes = await fetch("http://127.0.0.1:8000/storage/getLoadPins")
             .then(response => response.json())
         }
+        console.log(serverRes)
         if(serverRes.Message == null){
             startInputButtons()
             startPlotSections()
+            showLoadPins(serverRes.plots)
         }else{
-            contenSection.innerHTML = ""
-            filtersSection.innerHTML = ""
-            filtersSection.classList = ["filters"]
-            filtersSection.classList.add("w-[25vw]", "justify-self-center", "flex", "flex-col", "gap-y-0")
+            startInputButtons()
+            plotsArea = document.querySelector("div.plotsArea")
             let divAlert = document.createElement("div")
             divAlert.classList.add("border-red-600", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "p-3", "text-center", "absolute", "top-[8rem]", "left-[44%]")
             let textAlert = document.createElement("h2")
             textAlert.classList.add("text-xl", "text-red-600")
-            textAlert.appendChild(document.createTextNode(generalData.data.Message))
+            textAlert.appendChild(document.createTextNode(serverRes.Message))
             divAlert.appendChild(textAlert)
-            contenSection.appendChild(divAlert)
+            plotsArea.appendChild(divAlert)
         }
     }
-
+    console.log(generalData, serverRes)
 }
 
 fetchLatestData()
@@ -537,11 +540,9 @@ const loadFilters = ()=>{
                 let evento = new Event("click")
                 divLogs.dispatchEvent(evento)
             }
-            let filteredData =  []
             if(selectedFilters["operation"] != "All"){
-                filteredData = generalData.data.filter((element) => selectedFilters["operation"] == element.type)
+                hideOrRevealCards(selectedFilters["operation"], "hide")
             }
-            showAllData(filteredData)
         }else{
             if(operationInput.value != "All" && dateInput.value == "All" && timeInput.value == "All"){
                 selectedFilters["operation"] = operationInput.value
@@ -552,7 +553,7 @@ const loadFilters = ()=>{
                     let evento = new Event("click")
                     divLogs.dispatchEvent(evento)
                 }
-                showAllData(filteredData)
+                hideOrRevealCards(selectedFilters["operation"], "hide")
 
             }else if(operationInput.value == "All" && dateInput.value != "All" && timeInput.value != "All"){
                 selectedFilters["date"] = dateInput.value
@@ -583,7 +584,7 @@ const loadFilters = ()=>{
                         
                     }
                 }
-                showAllData(filteredData)
+                hideOrRevealCards(selectedFilters["operation"], "show")
             }else{
                 selectedFilters = {}
                 divContent.classList.remove("overflow-y-scroll")
@@ -591,7 +592,7 @@ const loadFilters = ()=>{
                 if(divLogs.classList.contains("bg-[#325D88]")){
                     printAllLogs()
                 }
-                showAllData(generalData.data)
+                hideOrRevealCards(selectedFilters["operation"], "show")
             }
         }
     })
@@ -608,7 +609,8 @@ const loadFilters = ()=>{
         if(divLogs.classList.contains("bg-[#325D88]")){
            printAllLogs()
         }
-        showAllData(generalData.data)
+        console.log("Clearing")
+        hideOrRevealCards("All", "show")
     })
 
     buttons.appendChild(filterButton)
@@ -624,7 +626,6 @@ const loadFilters = ()=>{
  * Function that represents all the data recieved from the database
  */
 const showAllData = (data)=>{
-    data.sort(sortByTime)
     let graphicContents = document.querySelector("div.graphicSection")
     if( graphicContents == null){
         graphicContents = document.createElement("div")
@@ -634,49 +635,15 @@ const showAllData = (data)=>{
     }
     data.forEach(element => {
         let card = document.createElement("div")
-        card.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg")
+        card.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", element.type)
         let title = document.createElement("h3")
         title.appendChild(document.createTextNode(element.type))
         title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
-        /* let summary = document.createElement("section")
-        summary.classList.add("flex", "items-center", "justify-center", "border-b-[#3e3f3a]", "border-b-[0.15rem]", "border-opacity-50", "gap-x-5")
-        let labels = ["Start: ", "End: ", "RA: ", "DEC: "]
-        labels.forEach(label => {
-            let divParragraph = document.createElement("div")
-            divParragraph.classList.add("flex", "gap-x-1")
-            let pLabel = document.createElement("p")
-            pLabel.classList.add("font-semibold", "text-[#3e3f3a]")
-            pLabel.appendChild(document.createTextNode(label))
-            let pContent = document.createElement("p")
-            pContent.classList.add("text-[#3e3f3a]")
-            switch(true){
-                case label == "RA: ":
-                    pContent.appendChild(document.createTextNode(element.RA))
-                    break
-                case label == "DEC: ":
-                    pContent.appendChild(document.createTextNode(element.DEC))
-                    break
-                case label == "Start: ":
-                    pContent.appendChild(document.createTextNode(element.Stime))
-                    break
-                case label == "End: ":
-                    pContent.appendChild(document.createTextNode(element.Etime))
-                    break
-            }
-            if(!((pLabel.innerHTML == "RA: " || pLabel.innerHTML == "DEC: ") && element.RA == null)){
-                divParragraph.appendChild(pLabel)
-                divParragraph.appendChild(pContent)
-            }
-            summary.appendChild(divParragraph)
-        }) */
         let histograms = document.createElement("section")
         histograms.classList.add("flex", "flex-col", "gap-y-2", "my-2")
         let imageArray = [...element.file]
         imageArray.sort((a,b)=>{return a.length - b.length})
         for (let i = 0; i < imageArray.length; i++) {   
-            /*let newImage = document.createElement("img")
-            newImage.setAttribute("src", imageArray[i].replace("html", "img").replace(".html", ".png"))
-            newImage.classList.add("w-[95%]", "h-[25rem]", "self-center") */
             let newIframe = document.createElement("iframe")
             newIframe.setAttribute("src", imageArray[i])
             newIframe.setAttribute("loading", "lazy")
@@ -781,9 +748,11 @@ const startInputButtons = ()=>{
         })
         searchButton.addEventListener("click", ()=>{
             let value = input.value
-            if(generalData.data[0] != undefined){
-                if(value != generalData.data[0].data[0]["Sdate"]){
-                    changeTitleAndFetch(value)
+            if(Object.keys(generalData).length > 0){
+                if(generalData.data[0] != undefined){
+                    if(value != generalData.data[0].data[0]["Sdate"]){
+                        changeTitleAndFetch(value)
+                    }
                 }
             }else{
                changeTitleAndFetch(value)
@@ -795,23 +764,82 @@ const changeTitleAndFetch = (value)=>{
     titleParts = title.innerHTML.split("-")
     title.innerHTML = ""
     title.appendChild(document.createTextNode(titleParts[0]+"-"+titleParts[1]+"-"+value))
+    let url = currentUrl.split("/")
+    if(history.state == null){
+        history.pushState({date: value}, "date", "/"+url[url.length-1]+"/"+value.toString())
+    }else{
+        let url = currentUrl.split("/")
+        history.replaceState({date: value}, "date", "/"+url[url.length-2]+"/"+value.toString())
+    }
     fetchLatestData(value)
 }
 
 const startPlotSections = ()=>{
-    let plotSection = document.querySelector("div.plotsArea")
+    plotSection = document.querySelector("div.plotsArea")
+    plotSection.innerHTML = ""
     let plotSec1 = document.createElement("div")
-    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg")
+    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "hundred")
     let title = document.createElement("h3")
     title.appendChild(document.createTextNode("10X Cables"))
     title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
     plotSec1.appendChild(title)
     let plotSec2 = document.createElement("div")
-    plotSec2.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg")
+    plotSec2.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "twoHundred")
     let title2 = document.createElement("h3")
     title2.appendChild(document.createTextNode("20X Cables"))
     title2.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
     plotSec2.appendChild(title2)
     plotSection.appendChild(plotSec1)
     plotSection.appendChild(plotSec2)
+}
+
+const hideOrRevealCards = (type, option)=>{
+    let graphicSection = document.querySelector("div.graphicSection")
+    let GSChilds = [...graphicSection.children]
+    switch(true){
+        case option == "hide":
+            GSChilds.forEach(child => {
+                if(!child.classList.contains(type)){
+                    if(!child.classList.contains("hidden")){
+                        child.classList.add("hidden")
+                    }
+                }else{
+                    if(child.classList.contains("hidden")){
+                        child.classList.remove("hidden")
+                    }
+                }
+            });
+            break
+        case option == "show":
+            GSChilds.forEach(child => {
+                if(!child.classList.contains(type)){
+                    if(child.classList.contains("hidden")){
+                        child.classList.remove("hidden")
+                    }
+                }else{
+                    if(child.classList.contains("hidden")){
+                        child.classList.remove("hidden")
+                    }
+                }
+            });
+            break
+    }
+}
+
+const showLoadPins = (array) =>{
+    array.forEach(element => {
+        let plotDiv = document.createElement("div")
+        plotDiv.classList.add("flex")
+        let newIframe = document.createElement("iframe")
+        newIframe.setAttribute("src", element)
+        newIframe.classList.add("w-[100%]", "h-[27.5rem]", "self-center")
+        plotDiv.appendChild(newIframe)
+        if (element.includes("10")){
+            let hundredCables = document.querySelector("div.hundred")
+            hundredCables.appendChild(plotDiv)
+        }else{
+            let twoHundredCables = document.querySelector("div.twoHundred")
+            twoHundredCables.appendChild(plotDiv)
+        }
+    })
 }

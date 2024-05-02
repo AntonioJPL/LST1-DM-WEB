@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 from django.contrib.staticfiles import finders
+import os
 
 def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     fig = go.Figure()
@@ -330,7 +331,13 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
         fig2.show() """
         #fig2.write_html(path.replace(".html", "_"+time[0]+"_"+"_SkyCoord2.html"))
 
-def FigureLoadPin(dfloadpin, path):
+def FigureLoadPin(dfloadpin, path, date):
+    pathParts = path.split("/")
+    newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
+    file = finders.find(newPath)
+    if file is None:
+        os.mkdir(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
+    path = file+"/"+"LoadPin_"+date+".html"
     fig = go.Figure()
     fig2 = go.Figure()
     dfloadpin = pd.DataFrame.from_dict(dfloadpin)
@@ -362,7 +369,6 @@ def FigureLoadPin(dfloadpin, path):
         mask212 = dfloadpin['LoadPin']==212
         mask213 = dfloadpin['LoadPin']==213
         loadPinSorted = dfloadpin.sort_values(by=["T"])
-        print(loadPinSorted[mask101]["T"])
         fig.add_trace(go.Scatter(x=loadPinSorted[mask101]["T"], y=loadPinSorted[mask101]["Load"], line= dict(color="orange"), name="Cable 101", legendgroup="Cable 101", mode="lines"))
         fig.add_trace(go.Scatter(x=loadPinSorted[mask102]["T"], y=loadPinSorted[mask102]["Load"], line= dict(color="green"), name="Cable 102", legendgroup="Cable 102", mode="lines"))
         fig.add_trace(go.Scatter(x=loadPinSorted[mask103]["T"], y=loadPinSorted[mask103]["Load"], line= dict(color="blueviolet"), name="Cable 103", legendgroup="Cable 103", mode="lines"))
@@ -416,5 +422,6 @@ def FigureLoadPin(dfloadpin, path):
         )
         fig.update_yaxes(tickangle=7.5)
         fig2.update_yaxes(tickangle=7.5)
+        print(file)
         fig.write_html(file.replace(".html", "_LoadPins10X.html"))
         fig2.write_html(file.replace(".html", "_LoadPins20X.html"))

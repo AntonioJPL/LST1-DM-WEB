@@ -105,7 +105,11 @@ def delete(request):
     return database.deleteData(database)
 #TEST
 def start(request):
-    return database.__init__(database)
+    try:
+        database.__init__(database)
+        return HttpResponse("The DataBase was initiated successfully.")
+    except Exception:
+        return HttpResponse("There was an error while initiating the DataBase.")
 #Function that returns the data and render the DriveMonitoring view or throws an Json response with an error message
 def driveMonitoring(request):
     if database.isData(database) == True:
@@ -154,15 +158,18 @@ def getData(request, date = None):
         else:
             return JsonResponse({"Message": "There is no data to show"})
     else:
-        if database.isData(database) == True:
-            userdict = json.loads(str(request.body,encoding='utf-8'))
-            data = {"data": database.listData(database, userdict["date"])}
-            return JsonResponse(data)
-        else:
-            return JsonResponse({"Message": "There is no data to show"})
+        if request.method == "POST":
+            if database.isData(database) == True:
+                userdict = json.loads(str(request.body,encoding='utf-8'))
+                data = {"data": database.listData(database, userdict["date"])}
+                return JsonResponse(data)
+            else:
+                return JsonResponse({"Message": "There is no data to show"})
         
 #Function that generates all the plots. TESTING FUNCTION
 def generatePlots(date):
+        print("Date recieved")
+        print(date)
         operation = database.getOperation(database,date)
         data = database.getDatedData(database, operation[0]["Tmin"], operation[0]["Tmax"])
         generalTrack = {}
@@ -265,30 +272,26 @@ def generatePlots(date):
                 generalGotopos["RA"].append(element["RA"])
                 generalGotopos["DEC"].append(element["DEC"])
         print("Generating figures")
-        #figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
-        #figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
-        #figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
-        #figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
+        figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+        figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+        figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+        figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
         if len(generalTrack["dfacc"]) != 0:
-            print()
-            #figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
+            #print()
+            figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
         if len(generalParkin["dfacc"]) != 0:
-            print()
-            #figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
+            #print()
+            figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
         if len(generalParkout["dfacc"]) != 0:
-            print()
-            #figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
+            #print()
+            figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
         if len(generalGotopos["dfacc"]) != 0:
-            print()
-            #figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+            #print()
+            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
         path = generalTrack["name"]
-        pathParts = path.split("/")
-        newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
-        file = finders.find(newPath)
-        if file is None:
-            os.mkdir(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
+        
             #print(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
-        figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), file+"/"+"LoadPin_"+date+".html")
+        figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), path, date)
         """ if len(generalTrack["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalTrack["dfpos"], generalTrack["dfbm"], generalTrack["RA"], generalTrack["DEC"], generalTrack["dfacc"], generalTrack["dftrack"], generalTrack["name"])
         if len(generalParkin["dfbm"]) != 0:

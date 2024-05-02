@@ -431,6 +431,7 @@ class MongoDb:
             index += 1
         return result
     def getOperation(self, date):
+        print(date)
         return list(self.dbname["Operations"].find({"Date": date}))
     def getDatedData(self, tmin, tmax):
         start = datetime.fromtimestamp(tmin)

@@ -1170,8 +1170,12 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
          
     getLoadPin(filename3)
     try: 
-        req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-        print(req.json()["Message"])
+        if firstData is not None:
+            req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+            print(req.json()["Message"])
+        """else:
+            req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+            print(req.json()["Message"])"""
     except Exception:
         print("Plot was not generated because there is no conection to Django or there was a problem.")
     print("END TIME")

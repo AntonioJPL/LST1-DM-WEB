@@ -26,7 +26,7 @@ import os
 database = MongoDb
 
 def index(request):
-    return database.getData(database)
+    return database.getLogsData(database)
 #Function thata stores the Logs into MongoDB
 @csrf_exempt
 def storeLogs(request):
@@ -98,12 +98,6 @@ def storeData(request):
     else:
         generatePlots(database.getLatestDate(database))
 #TEST
-def update(request):
-    return database.updateData(database)
-#TEST
-def delete(request):
-    return database.deleteData(database)
-#TEST
 def start(request):
     try:
         database.__init__(database)
@@ -114,7 +108,7 @@ def start(request):
 def driveMonitoring(request):
     if database.isData(database) == True:
         latestTime = database.getLatestDate(database)
-        data = [latestTime, database.getData(database)]
+        data = [latestTime]
         return render(request, "storage/driveMonitoring.html", {"data" : data})
     else:
         return JsonResponse({"Message": "There is no data to show"})
@@ -122,7 +116,7 @@ def driveMonitoring(request):
 def loadPins(request):
     if database.isData(database) == True:
         latestTime = database.getLatestDate(database)
-        data = [latestTime, database.getData(database)]
+        data = [latestTime]
         return render(request, "storage/loadPins.html", {"data" : data})
     else:
         return JsonResponse({"Message": "There is no data to show"})
@@ -306,7 +300,8 @@ def generatePlots(date):
 
 def showTestView(request):
     if request.method == "GET":
-        generatePlots("2024-02-03")
+        generatePlots("2024-02-02")
+        #database.getCommandStatusIndexes(database)
         #figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, "2024-02-03"), "html/Log_cmd.2024-02-03/LoadPin/LoadPin_20240203.html")
         #pins = database.getAllLoadPin(database, "2024-02-03")
         #print(pins)
@@ -330,7 +325,7 @@ def checkUpToDate(request):
         dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
         print(dateTime)
         return database.checkDates(database, dateTime)
-    
+
 @csrf_exempt
 def getLoadPins(request):
     if request.method == "GET":

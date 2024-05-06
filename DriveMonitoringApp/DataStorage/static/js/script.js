@@ -69,7 +69,7 @@ const generateStructure = ()=>{
 const fetchLatestData = async(date = null) => {
     let serverRes = null
     let urlParts = currentUrl.split("/")
-    if(urlParts[urlParts.length-2] == "driveMonitoring"){
+    if(urlParts[urlParts.length-2] == "driveMonitoring" || urlParts[urlParts.length-1] == "driveMonitoring"){
         summaryParsedData.splice(0, summaryParsedData.length)
         logsData.splice(0, logsData.length)
         if(date != null){
@@ -117,7 +117,6 @@ const fetchLatestData = async(date = null) => {
             serverRes = await fetch("http://127.0.0.1:8000/storage/getLoadPins")
             .then(response => response.json())
         }
-        console.log(serverRes)
         if(serverRes.Message == null){
             startInputButtons()
             startPlotSections()
@@ -843,3 +842,21 @@ const showLoadPins = (array) =>{
         }
     })
 }
+
+const runLoader = (time)=>{
+    let modalBG = document.createElement("div")
+    modalBG.classList.add("absolute", "w-full", "h-full", "bg-black/25", "top-0", "left-0", "flex", "justify-center", "items-center")
+    let loaderSpace = document.createElement("div")
+    loaderSpace.classList.add("size-[15rem]", "relative", "flex", "justify-center", "items-center")
+    let loaderImage = document.createElement("img")
+    loaderImage.setAttribute("src", "static/img/CTA-Loader.png")
+    loaderImage.classList.add("absolute", "translate-y-[1.25rem]", "-translate-x-[0.5rem]", "w-[187,5%]", "h-[125%]")
+    let loaderBar = document.createElement("div")
+    loaderBar.classList.add("Bar", "rounded-full", "border-white", "border","absolute" , "w-[75%]", "h-[75%]")
+    loaderSpace.appendChild(loaderBar)
+    loaderSpace.appendChild(loaderImage)
+    modalBG.appendChild(loaderSpace)
+    body.appendChild(modalBG)
+    setTimeout(time, ()=>{body.removeChild(modalBG)})
+}
+window.addEventListener("click", ()=>{runLoader(3000)})

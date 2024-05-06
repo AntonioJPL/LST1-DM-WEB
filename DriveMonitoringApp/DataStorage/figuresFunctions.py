@@ -61,8 +61,6 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             else:
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", showlegend=False, mode="lines"))
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", showlegend=False, mode="lines"))
-
-
             
     fig.update_layout(
         #title="My plot title",
@@ -119,6 +117,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     )
     fig.update_yaxes(tickangle=7.5)
     #figImg = go.Figure(fig)
+    print(path)
     fig.write_html(path)
     #pio.write_image(figImg, path.replace(".html", ".png").replace("html", "img"), width=1080, height=720)
     fig2 = go.Figure()
@@ -395,7 +394,6 @@ def FigureLoadPin(dfloadpin, path, date):
         fig2.add_trace(go.Scatter(x=loadPinSorted[mask211]["T"], y=loadPinSorted[mask211]["Load"], line= dict(color="yellow"), name="Cable 211", legendgroup="Cable 211", mode="lines"))
         fig2.add_trace(go.Scatter(x=loadPinSorted[mask212]["T"], y=loadPinSorted[mask212]["Load"], line= dict(color="purple"), name="Cable 212", legendgroup="Cable 212", mode="lines"))
         fig2.add_trace(go.Scatter(x=loadPinSorted[mask213]["T"], y=loadPinSorted[mask213]["Load"], line= dict(color="red"), name="Cable 213", legendgroup="Cable 213", mode="lines"))
-        file = path+"/LoadPin.html"
         fig.update_layout(
             yaxis=dict(
                 title="Load[KG]"
@@ -422,6 +420,5 @@ def FigureLoadPin(dfloadpin, path, date):
         )
         fig.update_yaxes(tickangle=7.5)
         fig2.update_yaxes(tickangle=7.5)
-        print(file)
-        fig.write_html(file.replace(".html", "_LoadPins10X.html"))
-        fig2.write_html(file.replace(".html", "_LoadPins20X.html"))
+        fig.write_html(path.replace(".html", "_LoadPins10X.html"))
+        fig2.write_html(path.replace(".html", "_LoadPins20X.html"))

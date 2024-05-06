@@ -22,7 +22,6 @@ class MongoDb:
    
     #Function that initialize the general data
     def __init__(self):
-        data = {}
         self.dbname["CommandStatus"].insert_many([
             {"name": "command sent"},
             {"name": "in progress"},
@@ -54,7 +53,7 @@ class MongoDb:
             {"name": "GoToPosition"}
         ])
     
-    def getData(self):
+    def getLogsData(self):
         #source ~/.bash_profile needed
         PORT = os.getenv("DB_HOST")
         print(PORT)
@@ -64,19 +63,8 @@ class MongoDb:
             datalist[id] = element
             datalist[id]["_id"] = id
         return datalist
-        #HttpResponse("Buenas tardes")
-        return JsonResponse({"status": "true", "data": datalist})
 
-    def updateData(self):    
-        update_data = self.collection_name.update_one({'medicine_id':'RR000123456'}, {'$set':{'common_name':'Paracetamol 500'}})
 
-    #count = collection_name.count()
-        print(self.collection_name)
-
-    def deleteData(self):
-        delete_data = self.collection_name.delete_one({'medicine_id':'RR000123456'})
-        print(delete_data)
-        return HttpResponse("Deleting an objecth with the indicated id")
 
     def listLogs(self, date):
         operation = list(self.dbname["Operations"].find({"Date": date}))
@@ -143,14 +131,15 @@ class MongoDb:
         if len(operation) > 1:
             return {"Message": "There is more than one operation in this date"}
     def storeOperation(self, data):
+        if len(self.dbname["Operations"].index_information()) == 1:
+            self.dbname["Operations"].create_index([('Date', pymongo.ASCENDING), ("Tmin", pymongo.ASCENDING), ("Tmax", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Operations"].insert_one(data)
         except Exception:
-            print()
-            #print("Duplicated Operation entry on Date: "+data["Date"])
+            #print()
+            print("Duplicated Operation entry on Date: "+data["Date"])
 
     def storeLogs(self, data):
-        
         if data["LogStatus"] != None:
             statusId = self.dbname["LogStatus"].find_one({"name":data["LogStatus"]}, {"name": 0})
             data["LogStatus"] = str(statusId["_id"]) #Id value of the status
@@ -164,7 +153,10 @@ class MongoDb:
         stringTime = data["Date"].replace("-", "/")+" "+data["Time"]
         timeStamp = datetime.strptime(stringTime, '%Y/%m/%d %H:%M:%S')
         timeStamp = timeStamp.timestamp()
-                    
+
+        if len(self.dbname["Logs"].index_information()) == 1:
+            self.dbname["Logs"].create_index([('Command', pymongo.ASCENDING), ("Date", pymongo.ASCENDING), ("LogStatus", pymongo.ASCENDING), ("Status", pymongo.ASCENDING), ("Time", pymongo.ASCENDING)], unique=True)
+
         try:
             self.dbname["Logs"].insert_one(data)
             #print("Find result")
@@ -175,6 +167,8 @@ class MongoDb:
     def storeGeneralData(self, data):
         typeId = self.dbname["Types"].find_one({"name": data["type"]}, {"name": 0})
         data["type"] = str(typeId["_id"])
+        if len(self.dbname["Data"].index_information()) == 1:
+            self.dbname["Data"].create_index([('addText', pymongo.ASCENDING), ("DEC", pymongo.ASCENDING), ("Edate", pymongo.ASCENDING), ("Etime", pymongo.ASCENDING), ("file", pymongo.ASCENDING), ("RA", pymongo.ASCENDING), ("Sdate", pymongo.ASCENDING), ("Stime", pymongo.ASCENDING), ("type", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Data"].insert_one(data)
             return True
@@ -182,6 +176,8 @@ class MongoDb:
             pass
             #print("Duplicated Data entry on Sdate: "+str(data["Sdate"])+", type: "+str(data["type"]))
     def storePosition(self, data):
+        if len(self.dbname["Position"].index_information()) == 1:
+            self.dbname["Position"].create_index([('T', pymongo.ASCENDING), ("Az", pymongo.ASCENDING), ("ZA", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Position"].insert_one(data)
         except Exception:
@@ -189,6 +185,8 @@ class MongoDb:
             ##print("Duplicated Position entry on T: "+str(data["T"]))
             
     def storeLoadPin(self, data):
+        if len(self.dbname["Load_Pin"].index_information()) == 1:
+            self.dbname["Load_Pin"].create_index([('T', pymongo.ASCENDING), ("LoadPin", pymongo.ASCENDING), ("Load", pymongo.ASCENDING)], unique=True)
         try: 
             self.dbname["Load_Pin"].insert_one(data)
         except Exception:
@@ -196,6 +194,8 @@ class MongoDb:
             ##print("Duplicated LoadPin entry on T: "+data["T"]+", Pin: "+str(data["LoadPin"]))
     
     def storeTrack(self, data):
+        if len(self.dbname["Track"].index_information()) == 1:
+            self.dbname["Track"].create_index([('T', pymongo.ASCENDING), ("Azth", pymongo.ASCENDING), ("ZAth", pymongo.ASCENDING), ("vsT0", pymongo.ASCENDING), ("Tth", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Track"].insert_one(data)
         except Exception:
@@ -204,6 +204,8 @@ class MongoDb:
                    
 
     def storeTorque(self, data):
+        if len(self.dbname["Torque"].index_information()) == 1:
+            self.dbname["Torque"].create_index([('T', pymongo.ASCENDING), ("Az1_mean", pymongo.ASCENDING), ("Az1_min", pymongo.ASCENDING), ("Az1_max", pymongo.ASCENDING), ("Az2_mean", pymongo.ASCENDING), ("Az2_min", pymongo.ASCENDING), ("Az2_max", pymongo.ASCENDING), ("Az3_mean", pymongo.ASCENDING), ("Az3_min", pymongo.ASCENDING), ("Az3_max", pymongo.ASCENDING), ("Az4_mean", pymongo.ASCENDING), ("Az4_min", pymongo.ASCENDING), ("Az4_max", pymongo.ASCENDING), ("El1_mean", pymongo.ASCENDING), ("El1_min", pymongo.ASCENDING), ("El1_max", pymongo.ASCENDING), ("El2_mean", pymongo.ASCENDING), ("El2_min", pymongo.ASCENDING), ("El2_max", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Torque"].insert_one(data)
         except Exception:
@@ -211,6 +213,8 @@ class MongoDb:
             #print("Duplicated Torque entry on T: "+str(data["T"]))
         
     def storeAccuracy(self, data):
+        if len(self.dbname["Accuracy"].index_information()) == 1:
+            self.dbname["Accuracy"].create_index([('T', pymongo.ASCENDING), ("Azmean", pymongo.ASCENDING), ("Azmin", pymongo.ASCENDING), ("Azmax", pymongo.ASCENDING), ("Zdmean", pymongo.ASCENDING), ("Zdmin", pymongo.ASCENDING), ("Zdmax", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Accuracy"].insert_one(data)
         except Exception:
@@ -218,27 +222,17 @@ class MongoDb:
             #print("Duplicated Accuracy entry on T: "+str(data["T"]))
             
     def storeBendModel(self, data):
+        if len(self.dbname["Bend_Model"].index_information()) == 1:
+            self.dbname["Bend_Model"].create_index([('T', pymongo.ASCENDING), ("AzC", pymongo.ASCENDING), ("ZAC", pymongo.ASCENDING)], unique=True)
         try:
             self.dbname["Bend_Model"].insert_one(data)
         except Exception:
             pass
             #print("Duplicated Bend Model entry on T: "+str(data["T"]))
                    
+    def isData(self):
+        return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
             
-    def checkDuplicatedLogs(self, Time, Command, Date):
-        commandId = self.dbname["Commands"].find_one({"name": Command}, {"name": 0})
-        commandId = str(commandId["_id"])
-        if self.dbname["Logs"].find_one({"Time": Time, "Command": commandId, "Date": Date}) != None:
-            return True
-        else:
-            return False
-    def checkDuplicatedValues(self, type, date, time):
-        typeId = self.dbname["Types"].find_one({"name": type}, {"name": 0})
-        typeId = str(typeId["_id"])
-        if self.dbname["Data"].find_one({"type": type, "Sdate": date, "Stime": time}) != None:
-            return True
-        else:
-            return False
     def getLatestDate(self):
         result =  list(self.dbname["Logs"].find({}, {"_id": 0 ,"Date": 1}).sort({"Date": -1}).limit(1))
         dateParts = result[0]["Date"].split("-")
@@ -263,12 +257,10 @@ class MongoDb:
                 times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
             response["times"] = times
         return response 
-    def isData(self):
-        return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
     def getFirstData(self):
         return self.dbname["Data"].find_one({"Sdate": "2024-02-03"})
     def getPosition(self, tmin, tmax):
-        #TODO - Find how to query in MongoDB to get the items
+
         result = {}
         result["T"] = {}
         result["Az"] = {}
@@ -283,7 +275,6 @@ class MongoDb:
             index += 1
         return result
     def getLoadPin(self, tmin, tmax):
-        #TODO - Find how to query in MongoDB to get the items
         result = {}
         result["T"] = {}
         result["LoadPin"] = {}
@@ -299,7 +290,6 @@ class MongoDb:
             index += 1
         return result
     def getAllLoadPin(self, date):
-        #TODO - Find how to query in MongoDB to get the items
         result = {}
         result["T"] = {}
         result["LoadPin"] = {}
@@ -318,7 +308,6 @@ class MongoDb:
             index += 1
         return result
     def getTrack(self, tmin, tmax):
-        #TODO - Find how to query in MongoDB to get the items
         result = {}
         result["T"] = {}
         result["Azth"] = {}
@@ -339,7 +328,6 @@ class MongoDb:
             index += 1
         return result
     def getTorque(self, tmin, tmax):
-        #TODO - Find how to query in MongoDB to get the items
         result = {}
         result["T"] = {}
         result["Az1_mean"] = {}
@@ -388,7 +376,6 @@ class MongoDb:
             index += 1
         return result
     def getAccuracy(self, tmin, tmax):
-        #TODO - Find how to query in MongoDB to get the items
         result = {}
         result["T"] = {}
         result["Azmean"] = {}
@@ -441,31 +428,40 @@ class MongoDb:
         return list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}]))
     def getOperationTypes(self):
         return list(self.dbname["Types"].find())
+    def getLPPlots(self, date):
+        operation = list(self.dbname["Operations"].find({"Date": date}))
+        if len(operation) > 0:
+            start = datetime.fromtimestamp(operation[0]["Tmin"])
+            start = str(start).split(" ")
+            data = self.dbname["Data"].find_one({"Sdate": date, "Stime": {"$gte": start[1]}})
+            path = data["file"]
+            pathParts = path.split("/")
+            path = path.replace(pathParts[-2]+"/"+pathParts[-1], "LoadPin")
+            file = finders.find(path)
+            if file is not None:
+                print(file)
+                files = glob.glob(file+"/"+"LoadPin_"+date+"*")
+                print(files)
+                plots = []
+                for i in range(0, len(files)):
+                    files[i] = files[i].split("/")
+                    files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                    plots.append(files[i])
+                if len(plots) > 0:
+                    return JsonResponse({"plots": plots})
+                else:
+                    return JsonResponse({"Message": "There is no data to show"})
+            else:
+                return JsonResponse({"Message": "There is no data to show"})
+        else:
+            return JsonResponse({"Message": "There is no data to show"})
     def checkDates(self, date):
-        lastElementFound = list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 1}]))
+        try:
+            lastElementFound = list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 1}]))
+        except Exception:
+            return JsonResponse({"lastDate": False})
         lastElementFound = lastElementFound[0]
         if lastElementFound["Date"] == date:
             return JsonResponse({"lastDate": True})
         else: 
             return JsonResponse({"lastDate": lastElementFound["Date"]})
-    def getLPPlots(self, date):
-        operation = list(self.dbname["Operations"].find({"Date": date}))
-        start = datetime.fromtimestamp(operation[0]["Tmin"])
-        start = str(start).split(" ")
-        data = self.dbname["Data"].find_one({"Sdate": date, "Stime": {"$gte": start[1]}})
-        path = data["file"]
-        pathParts = path.split("/")
-        path = path.replace(pathParts[-2]+"/"+pathParts[-1], "LoadPin")
-        file = finders.find(path)
-        if file is not None:
-            print(file)
-            files = glob.glob(file+"/"+"LoadPin_"+date+"*")
-            print(files)
-            plots = []
-            for i in range(0, len(files)):
-                files[i] = files[i].split("/")
-                files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
-                plots.append(files[i])
-            return JsonResponse({"plots": plots})
-        else:
-            return JsonResponse({"Message": "There is no data to show"})

@@ -22,18 +22,19 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('storage', Sv.home),
+    #Find how to pass date data in the url
+    path('driveMonitoring', Sv.driveMonitoring, name="driveMonitoring"),
+    path('loadPins', Sv.loadPins, name="loadPins"),
     path('storage/index', Sv.index),
     path('storage/storeLogs', Sv.storeLogs),
     path('storage/storeData', Sv.storeData),
     path('storage/getLogs', Sv.getLogs),
     path('storage/getData', Sv.getData),
     path('storage/test', Sv.showTestView),
-    path('storage/update', Sv.update),
-    path('storage/delete', Sv.delete),
     path('storage/start', Sv.start),
     path('storage/plotGeneration', Sv.generateDatePlots),
     path('storage/checkUpToDate', Sv.checkUpToDate),
+    path('storage/getLoadPins', Sv.getLoadPins),
 
 
 

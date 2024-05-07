@@ -843,20 +843,33 @@ const showLoadPins = (array) =>{
     })
 }
 
-const runLoader = (time)=>{
+const runLoader = ()=>{
     let modalBG = document.createElement("div")
-    modalBG.classList.add("absolute", "w-full", "h-full", "bg-black/25", "top-0", "left-0", "flex", "justify-center", "items-center")
+    modalBG.classList.add("modal", "w-full", "h-full", "bg-black/25", "top-0", "left-0", "flex", "justify-center", "items-center")
     let loaderSpace = document.createElement("div")
-    loaderSpace.classList.add("size-[15rem]", "relative", "flex", "justify-center", "items-center")
+    loaderSpace.classList.add("w-full", "h-full", "relative", "flex", "justify-center", "items-center")
     let loaderImage = document.createElement("img")
     loaderImage.setAttribute("src", "static/img/CTA-Loader.png")
-    loaderImage.classList.add("absolute", "translate-y-[1.25rem]", "-translate-x-[0.5rem]", "w-[187,5%]", "h-[125%]")
+    loaderImage.classList.add("absolute", "translate-y-[1.65rem]", "-translate-x-[1.3rem]", "w-[35rem]", "h-[23.33rem]")
     let loaderBar = document.createElement("div")
-    loaderBar.classList.add("Bar", "rounded-full", "border-white", "border","absolute" , "w-[75%]", "h-[75%]")
+    loaderBar.classList.add("Bar", "rounded-full", "border-white", "border","absolute" , "w-[17.5rem]", "h-[17.5rem]")
     loaderSpace.appendChild(loaderBar)
     loaderSpace.appendChild(loaderImage)
     modalBG.appendChild(loaderSpace)
     body.appendChild(modalBG)
-    setTimeout(time, ()=>{body.removeChild(modalBG)})
+    body.classList.add("overflow-hidden")
 }
-window.addEventListener("click", ()=>{runLoader(3000)})
+
+const deactivateLoader =()=>{
+    let modal = document.querySelector("div.modal")
+    body.removeChild(modal)
+    body.classList.remove("overflow-hidden")
+}
+window.addEventListener("click", ()=>{
+    let modal = document.querySelector("div.modal")
+    if(modal == null){
+        runLoader()
+    }else{
+        deactivateLoader()
+    }
+})

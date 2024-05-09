@@ -25,85 +25,7 @@ import os
 
 database = MongoDb
 
-def index(request):
-    return database.getLogsData(database)
-#Function thata stores the Logs into MongoDB
-@csrf_exempt
-def storeLogs(request):
-    if(request.method == 'POST'):
-        userdict = json.loads(str(request.body,encoding='utf-8'))
-        dictNewValues = []
-        correct = True
-        for item in userdict:
-            #print(item)
-            if item["Command"] != "Drive":
-                if database.checkDuplicatedLogs(database, item["Time"], item["Command"], item["Date"]) == False:
-                    dictNewValues.append(item)
-        #print(dictNewValues)
-        if len(dictNewValues) > 0:
-            correct = database.storeLogs(database, dictNewValues)
-        else:
-            return JsonResponse({"Message": "There was no new Logs data to store."})
-        if correct:
-            return JsonResponse({"Message": "The data has been stored successfully."})
-        else:
-            return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
-#Function that stores the general data into MongoDB
-@csrf_exempt
-def storeData(request):
-    #TODO - Needs optimization as it takes a LOT of time to store all the data
-    if(request.method == 'POST'):
-        body = json.loads(str(request.body,encoding='utf-8'))
-        generalData = {}
-        generalData["type"] = body[0]["type"][0]
-        generalData["Sdate"] = body[0]["Sdate"][0]
-        generalData["Stime"] = body[0]["Stime"][0]
-        generalData["Edate"] = body[0]["Edate"][0]
-        generalData["Etime"] = body[0]["Etime"][0]
-        generalData["RA"] = body[0]["RA"][0]
-        generalData["DEC"] = body[0]["DEC"][0]
-        imagePattern = body[0]["file"][0].split("/")
-        imageSpltiEnd = imagePattern[-1].split(".")
-        finalImage = imagePattern[-4]+"/"+imagePattern[-3]+"/"+imagePattern[-2]+"/"+imageSpltiEnd[0]
-        generalData["file"] = finalImage
-        generalData["addText"] = body[0]["addText"][0]
-        #TODO - Store the rest of the data
-        if len(body[0]["position"]) != 0:
-            position = json.loads(body[0]["position"][0])
-            database.storePosition(database, position)
-        if len(body[0]["loadPin"]) != 0:
-            pinData = json.loads(body[0]["loadPin"][0])
-            database.storeLoadPin(database, pinData)
-        if len(body[0]["track"]) != 0:
-            track = json.loads(body[0]["track"][0])
-            database.storeTrack(database, track)
-        if len(body[0]["torque"]) != 0:
-            torque = json.loads(body[0]["torque"][0])
-            database.storeTorque(database, torque)
-        if len(body[0]["accuracy"]) != 0:
-            accuracy = json.loads(body[0]["accuracy"][0])
-            database.storeAccuracy(database, accuracy)
-        if len(body[0]["bendModel"]) != 0:
-            bendModel = json.loads(body[0]["bendModel"][0])
-            database.storeBendModel(database, bendModel)
-        correct = True
-        if database.checkDuplicatedValues(database, generalData["type"], generalData["Sdate"], generalData["Stime"]) == False:
-            correct = database.storeGeneralData(database, generalData)
-        else:
-            return JsonResponse({"Message": "There was no new General data to store."})
-        if correct:
-            return JsonResponse({"Message": "The data has been stored successfully."})
-        else:
-            return JsonResponse({"Message": "The data was not totally inserted due to duplicity or an error."})
-    else:
-        generatePlots(database.getLatestDate(database))
-#TEST
-def start(request):
-    try:
-        database.__init__(database)
-        return HttpResponse("The DataBase was initiated successfully.")
-    except Exception:
-        return HttpResponse("There was an error while initiating the DataBase.")
+
 #Function that returns the data and render the DriveMonitoring view or throws an Json response with an error message
 def driveMonitoring(request):
     if database.isData(database) == True:
@@ -331,21 +253,13 @@ def generateDatePlots(request):
         #generatePlots()
         return JsonResponse({"Message": "The plots have been generated correctly"})
     
-@csrf_exempt
-def checkUpToDate(request):
-    if request.method == "POST":
-        userdict = json.loads(str(request.body,encoding='utf-8'))
-        userdict = userdict[0][0]
-        dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
-        print(dateTime)
-        return database.checkDates(database, dateTime)
 
 @csrf_exempt
 def getLoadPins(request):
     if request.method == "GET":
         date = database.getLatestDate(database)
-        return database.getLPPlots(database, date)
+        return JsonResponse(database.getLPPlots(database, date))
 
     if request.method == "POST":
         userdict = json.loads(str(request.body,encoding='utf-8'))
-        return database.getLPPlots(database, userdict["date"])
+        return JsonResponse(database.getLPPlots(database, userdict["date"]))

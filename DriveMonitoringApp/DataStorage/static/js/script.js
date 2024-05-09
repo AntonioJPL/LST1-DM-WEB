@@ -299,7 +299,6 @@ const filterLogs = ()=>{
         }
     }else if(selectedFilters["operation"] != "All"){
         selectedOption = null
-
         switch(true){
             case selectedFilters["operation"] == "GoToPos":
                 selectedOption = "GoToPosition"
@@ -773,10 +772,6 @@ const startInputButtons = ()=>{
             }
         });
         let url = currentUrl.split("/")
-        console.log("First history")
-        console.log(url.length)
-        console.log(url[url.length-2])
-        console.log(currentUrl.includes("/"+url[url.length-2]+"/?date="+input.value))
         if(url.length == 4){
             if(!currentUrl.includes("/"+url[url.length-1]+"/?date="+input.value)){
                 history.pushState({date: input.value}, "date", "/"+url[url.length-1]+"/?date="+input.value)
@@ -803,11 +798,17 @@ const startInputButtons = ()=>{
         })
         searchButton.addEventListener("click", ()=>{
             let value = input.value
+            console.log(value)
+            console.log(generalData)
             if(Object.keys(generalData).length > 0){
                 if(generalData.data[0] != undefined){
                     if(value != generalData.data[0].data[0]["Sdate"]){
                         changeTitleAndFetch(value)
+                        
                     }
+                }else{
+                    console.log("I inside the new else")
+                    changeTitleAndFetch(value)
                 }
             }else{
                changeTitleAndFetch(value)
@@ -816,6 +817,7 @@ const startInputButtons = ()=>{
     }
 }
 const changeTitleAndFetch = (value)=>{
+    console.log(value)
     runLoader()
     titleParts = title.innerHTML.split("-")
     title.innerHTML = ""

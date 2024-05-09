@@ -448,13 +448,13 @@ class MongoDb:
                     files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
                     plots.append(files[i])
                 if len(plots) > 0:
-                    return JsonResponse({"plots": plots})
+                    return {"plots": plots}
                 else:
-                    return JsonResponse({"Message": "There is no data to show"})
+                    return {"Message": "There is no data to show"}
             else:
-                return JsonResponse({"Message": "There is no data to show"})
+                return {"Message": "There is no data to show"}
         else:
-            return JsonResponse({"Message": "There is no data to show"})
+            return {"Message": "There is no data to show"}
     def checkDates(self, date):
         print(date)
         try:

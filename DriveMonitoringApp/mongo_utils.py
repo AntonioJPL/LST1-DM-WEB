@@ -15,7 +15,7 @@ import pandas as pd
 
 class MongoDb:
 
-    my_client = pymongo.MongoClient('localhost', 27017)
+    my_client = pymongo.MongoClient('localhost', 27005)
     dbname = my_client['Drive-Monitoring']
     collection_logs = dbname["Logs"]
     collection_data = dbname["Data"]

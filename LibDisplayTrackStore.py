@@ -496,6 +496,26 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
 
     generallog.clear()
 
+    #This is the automatized check on the plots being generated a week before the executed date
+    try:
+        actualDate = getDateAndLine(filename, "Drive Regulation Parameters Azimuth")
+        actualDate = actualDate[1][0].split(" ")
+        actualDate = actualDate[0]
+        actualDate = actualDate.split("/")
+        actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
+        actualDate = datetime.strptime(actualDate, "%Y/%m/%d")
+        startDate = actualDate-timedelta(days=7)
+        while startDate < actualDate:
+            if not os.path.isdir(dirname.replace(actualDate, startDate)):
+                try: 
+                    req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[startDate])
+                    print(req.json()["Message"])
+                except Exception:
+                    print("Plot was not generated because there is no conection to Django or there was a problem.")
+            startDate+timedelta(days=1)
+    except Exception:
+        print("There was an error or all the plots are generated")
+    
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
     lastDate = None
     try:

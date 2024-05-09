@@ -617,8 +617,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         actualDate = actualDate.split("/")
         actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
         if lastDate == "Empty":
-            lastDate = actualDate.replace(actualDate[-1], "1")
-            print(lastDate)
+            lastDate = actualDate[0:-1]+"1"
             parsedLastDBDate = datetime.strptime(lastDate, dateFormat)-timedelta(days=1)
             parsedActualDate = datetime.strptime(actualDate, dateFormat)
             while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):

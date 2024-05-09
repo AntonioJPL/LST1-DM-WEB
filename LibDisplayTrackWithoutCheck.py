@@ -344,7 +344,7 @@ def getTrackNew(filename3,tmin,tmax):
 
 ##### READ LOAD PIN
 def getLoadPin(filename2):
-    #print("getLoadPin %s %s %s"%(filename2,tmin,tmax))
+    print("getLoadPin %s"%(filename2))
     t0=0
     dt=0
     
@@ -1144,8 +1144,15 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             #print(req.json()["Message"])
          
     getLoadPin(filename3)
-    req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-    print(req.json()["Message"])
+    try: 
+        if firstData is not None:
+            req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+            print(req.json()["Message"])
+        """else:
+            req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
+            print(req.json()["Message"])"""
+    except Exception:
+        print("Plot was not generated because there is no conection to Django or there was a problem.")
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     

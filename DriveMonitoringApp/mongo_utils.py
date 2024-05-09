@@ -456,11 +456,15 @@ class MongoDb:
         else:
             return JsonResponse({"Message": "There is no data to show"})
     def checkDates(self, date):
+        print(date)
         try:
             lastElementFound = list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 1}]))
         except Exception:
             return {"lastDate": False}
-        lastElementFound = lastElementFound[0]
+        if len(lastElementFound) > 0:
+            lastElementFound = lastElementFound[0]
+        else:
+            return {"lastDate": "Empty"}
         if lastElementFound["Date"] == date:
             return {"lastDate": True}
         else:

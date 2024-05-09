@@ -602,9 +602,10 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     try:
         date = datetime.fromtimestamp(firstData[0])
         req = MongoDb.checkDates(MongoDb, date.strftime("%Y-%m-%d"))
+        print(req)
         lastDate = req["lastDate"]
-    except Exception: 
-        print("Could not check if data is up to date. Storing actual date...")
+    except Exception as e: 
+        print("Could not check if data is up to date. Storing actual date... %s", repr(e))
         lastDate = None
     if lastDate is not True and lastDate is not None and lastDate is not False:
         print("---------- The System is not up to date. Last data date on MongoDB: "+lastDate+" -----------")
@@ -615,12 +616,21 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
         actualDate = actualDate[0]
         actualDate = actualDate.split("/")
         actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
-        lastDate = lastDate.replace("-", "/")
-        parsedLastDBDate = datetime.strptime(lastDate, dateFormat)
-        parsedActualDate = datetime.strptime(actualDate, dateFormat)
-        while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):
-            parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
-            asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
+        if lastDate == "Empty":
+            lastDate = actualDate.replace(actualDate[-1], "1")
+            print(lastDate)
+            parsedLastDBDate = datetime.strptime(lastDate, dateFormat)-timedelta(days=1)
+            parsedActualDate = datetime.strptime(actualDate, dateFormat)
+            while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):
+                parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
+                asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
+        else:
+            lastDate = lastDate.replace("-", "/")
+            parsedLastDBDate = datetime.strptime(lastDate, dateFormat)
+            parsedActualDate = datetime.strptime(actualDate, dateFormat)
+            while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):
+                parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
+                asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
 
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")

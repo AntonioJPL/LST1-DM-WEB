@@ -600,9 +600,9 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
     lastDate = None
     try:
-        print(firstData)
-        req = MongoDb.checkDates(MongoDb, firstData)
-        lastDate = req.json()["lastDate"]
+        date = datetime.fromtimestamp(firstData[0])
+        req = MongoDb.checkDates(MongoDb, date.strftime("%Y-%m-%d"))
+        lastDate = req["lastDate"]
     except Exception: 
         print("Could not check if data is up to date. Storing actual date...")
         lastDate = None

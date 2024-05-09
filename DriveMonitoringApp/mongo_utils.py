@@ -459,9 +459,9 @@ class MongoDb:
         try:
             lastElementFound = list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 1}]))
         except Exception:
-            return JsonResponse({"lastDate": False})
+            return {"lastDate": False}
         lastElementFound = lastElementFound[0]
         if lastElementFound["Date"] == date:
-            return JsonResponse({"lastDate": True})
-        else: 
-            return JsonResponse({"lastDate": lastElementFound["Date"]})
+            return {"lastDate": True}
+        else:
+            return {"lastDate": lastElementFound["Date"]}

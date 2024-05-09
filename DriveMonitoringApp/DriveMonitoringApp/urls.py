@@ -24,7 +24,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     #Find how to pass date data in the url
     path('driveMonitoring', Sv.driveMonitoring, name="driveMonitoring"),
+    path('driveMonitoring/', Sv.driveMonitoring, name="driveMonitoringD"),
     path('loadPins', Sv.loadPins, name="loadPins"),
+    path('loadPins/', Sv.loadPins, name="loadPinsD"),
     path('storage/index', Sv.index),
     path('storage/storeLogs', Sv.storeLogs),
     path('storage/storeData', Sv.storeData),

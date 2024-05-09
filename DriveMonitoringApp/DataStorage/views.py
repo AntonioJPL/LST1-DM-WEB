@@ -107,17 +107,30 @@ def start(request):
 #Function that returns the data and render the DriveMonitoring view or throws an Json response with an error message
 def driveMonitoring(request):
     if database.isData(database) == True:
-        latestTime = database.getLatestDate(database)
-        data = [latestTime]
-        return render(request, "storage/driveMonitoring.html", {"data" : data})
+        if request.GET.get("date") is None:
+            latestTime = database.getLatestDate(database)
+            data = [latestTime]
+            print(data)
+            return render(request, "storage/driveMonitoring.html", {"data" : data})
+        else:
+            date = request.GET.get("date")
+            print(date)
+            return render(request, "storage/driveMonitoring.html", {"data" : [date]})
+
     else:
         return JsonResponse({"Message": "There is no data to show"})
 #Function that returns the data and render the LoadPins view or throws an Json response with an error message
 def loadPins(request):
     if database.isData(database) == True:
-        latestTime = database.getLatestDate(database)
-        data = [latestTime]
-        return render(request, "storage/loadPins.html", {"data" : data})
+        if request.GET.get("date") is None:
+            latestTime = database.getLatestDate(database)
+            data = [latestTime]
+            print(data)
+            return render(request, "storage/loadPins.html", {"data" : data})
+        else:
+            date = request.GET.get("date")
+            print(date)
+            return render(request, "storage/loadPins.html", {"data" : [date]})
     else:
         return JsonResponse({"Message": "There is no data to show"})
 
@@ -300,7 +313,8 @@ def generatePlots(date):
 
 def showTestView(request):
     if request.method == "GET":
-        generatePlots("2024-02-02")
+        generatePlots("2024-02-04")
+        generatePlots("2024-02-05")
         #database.getCommandStatusIndexes(database)
         #figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, "2024-02-03"), "html/Log_cmd.2024-02-03/LoadPin/LoadPin_20240203.html")
         #pins = database.getAllLoadPin(database, "2024-02-03")

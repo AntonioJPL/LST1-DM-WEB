@@ -335,7 +335,8 @@ def FigureLoadPin(dfloadpin, path, date):
     newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
     file = finders.find(newPath)
     if file is None:
-        os.mkdir(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
+        file = path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath)
+        os.mkdir(file)
     path = file+"/"+"LoadPin_"+date+".html"
     fig = go.Figure()
     fig2 = go.Figure()

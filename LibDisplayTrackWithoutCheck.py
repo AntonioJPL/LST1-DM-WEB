@@ -496,6 +496,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
 
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
+    trackcmdinitiale = getDate(filename,"Start Tracking")
+    gotocmdinitiale = getDate(filename,"GoToPosition") 
 
     #Param regulation
     azparam,azparamline = getDateAndLine(filename,"Drive Regulation Parameters Azimuth")    #This prints the found msg in console

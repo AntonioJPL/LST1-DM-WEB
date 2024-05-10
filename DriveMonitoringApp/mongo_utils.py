@@ -418,7 +418,6 @@ class MongoDb:
             index += 1
         return result
     def getOperation(self, date):
-        print(date)
         return list(self.dbname["Operations"].find({"Date": date}))
     def getDatedData(self, tmin, tmax):
         start = datetime.fromtimestamp(tmin)
@@ -469,3 +468,5 @@ class MongoDb:
             return {"lastDate": True}
         else:
             return {"lastDate": lastElementFound["Date"]}
+    def getLast7Operations(self):
+        return list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 7}]))

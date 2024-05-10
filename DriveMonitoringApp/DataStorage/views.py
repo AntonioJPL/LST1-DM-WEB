@@ -153,7 +153,7 @@ def generatePlots(date):
                     generalTrack["dfacc"].append(dfacc)
                 if dfbm is not None and dfacc.empty != True:
                     generalTrack["dfbm"].append(dfbm)
-                filename = "Track-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                filename = "Track-"+datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d")+"-"+datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d")
                 generalTrack["name"] = file+"/"+filename+".html"
                 generalTrack["addText"] = element["addText"]
                 generalTrack["RA"].append(element["RA"])
@@ -218,7 +218,6 @@ def generatePlots(date):
             #print()
             figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
         path = generalTrack["name"]
-        
             #print(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
         figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), path, date)
         """ if len(generalTrack["dfbm"]) != 0:
@@ -250,8 +249,7 @@ def generateDatePlots(request):
         userdict = userdict[0][0]
         dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
         generatePlots(dateTime)
-        #generatePlots()
-        return JsonResponse({"Message": "The plots have been generated correctly"})
+        return HttpResponse("The plots have been generated")
     
 
 @csrf_exempt

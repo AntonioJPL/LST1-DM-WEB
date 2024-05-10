@@ -465,7 +465,7 @@ def storeLogsAndOperation(logsorted):
             commandPosition = i
         else:
             data["LogStatus"] = None
-
+                    
         if len(logsorted[i][1].split(" ")) <= 2:
             data["Command"] = logsorted[i][1]
             data["Status"] = None
@@ -497,24 +497,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     generallog.clear()
 
     #This is the automatized check on the plots being generated a week before the executed date
-    try:
-        actualDate = getDateAndLine(filename, "Drive Regulation Parameters Azimuth")
-        actualDate = actualDate[1][0].split(" ")
-        actualDate = actualDate[0]
-        actualDate = actualDate.split("/")
-        actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
-        actualDate = datetime.strptime(actualDate, "%Y/%m/%d")
-        startDate = actualDate-timedelta(days=7)
-        while startDate < actualDate:
-            if not os.path.isdir(dirname.replace(actualDate, startDate)):
-                try: 
-                    req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[startDate])
-                    print(req.json()["Message"])
-                except Exception:
-                    print("Plot was not generated because there is no conection to Django or there was a problem.")
-            startDate+timedelta(days=1)
-    except Exception:
-        print("There was an error or all the plots are generated")
+    dirCopy = dirname
+    checkPlots(dirCopy, filename)
     
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
     lastDate = None
@@ -552,6 +536,8 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
 
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
+    trackcmdinitiale = getDate(filename,"Start Tracking")
+    gotocmdinitiale = getDate(filename,"GoToPosition") 
 
     #Param regulation
     azparam,azparamline = getDateAndLine(filename,"Drive Regulation Parameters Azimuth")    #This prints the found msg in console
@@ -582,7 +568,6 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     gotobeg = getDate(filename,"GoToTelescopePosition in progress")
     gotoend = getDate(filename,"GoToTelescopePosition Done received")
     gotoerror = getDate(filename,"GoToTelescopePosition action error")
-
 
     generallogsorted =sorted(generallog, key=itemgetter(0)) #Orders generallog by date as position 0 contains begdate value
     print("START TIME")
@@ -631,7 +616,6 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     try: 
         if firstData is not None:
             req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-            print(req.json()["Message"])
     except Exception:
         print("Plot was not generated because there is no conection to Django or there was a problem.")
     print("END TIME")
@@ -641,3 +625,28 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
 async def runFile(date):
     runfile = "sh DisplayTrack-NoCheck.sh %s" % (date)
     os.system(runfile)
+
+async def generatePlots(datetime):
+    requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[[datetime]])
+
+def checkPlots(dirname, filename):
+    try:
+        last7Operations = MongoDb.getLast7Operations(MongoDb)
+        actualDate = getDateAndLine(filename, "Drive Regulation Parameters Azimuth")
+        actualDate = actualDate[1][0].split(" ")
+        actualDate = actualDate[0]
+        actualDate = actualDate.split("/")
+        dashedDate = "20"+actualDate[2]+"-"+actualDate[1]+"-"+actualDate[0]
+        i = 0
+        try: 
+            while i < len(last7Operations):
+                operation = last7Operations[i]
+                generalDir = dirname.replace(dashedDate, operation["Date"])
+                directories = os.listdir(generalDir)
+                if len(os.listdir(generalDir+"/"+directories[0])) == 0:
+                    requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[[operation["Tmin"]]])
+                i += 1
+        except Exception as e:
+            print("Plot was not generated. Error: "+str(e))
+    except Exception as e:
+        print("There was an error or all the plots are already generated: "+str(e))

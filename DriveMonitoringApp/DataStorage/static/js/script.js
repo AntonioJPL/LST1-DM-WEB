@@ -66,7 +66,7 @@ const deactivateLoader =()=>{
 }
 
 runLoader()
-setTimeout(deactivateLoader, 500)
+setTimeout(deactivateLoader, 1000)
 /**
  * Function that generates the basic structure 
  */
@@ -841,21 +841,40 @@ const changeTitleAndFetch = (value)=>{
 
 const startPlotSections = ()=>{
     plotSection = document.querySelector("div.plotsArea")
+    plotSection.classList.add("flex", "flex-col", "items-center")
     plotSection.innerHTML = ""
     let plotSec1 = document.createElement("div")
-    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "hundred")
+    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "cablesImages", "w-auto", "bg-black/10")
+    let image1 = document.createElement("img")
+    image1.setAttribute("src", "/static/img/LST-Figure-10X.png")
+    image1.classList.add("h-[25rem]")
+    let image2 = document.createElement("img")
+    image2.setAttribute("src", "/static/img/LST-Figure-20X.png")
+    image2.classList.add("h-[25rem]")
+    let divImages = document.createElement("div")
+    divImages.classList.add("flex", "justify-center", "gap-x-3")
+    divImages.appendChild(image2)
+    divImages.appendChild(image1)
     let title = document.createElement("h3")
-    title.appendChild(document.createTextNode("10X Cables"))
+    title.appendChild(document.createTextNode("Cables representation"))
     title.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
     plotSec1.appendChild(title)
+    plotSec1.appendChild(divImages)
     let plotSec2 = document.createElement("div")
-    plotSec2.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "twoHundred")
+    plotSec2.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "hundred", "w-full")
     let title2 = document.createElement("h3")
-    title2.appendChild(document.createTextNode("20X Cables"))
+    title2.appendChild(document.createTextNode("10X Cables"))
     title2.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
     plotSec2.appendChild(title2)
+    let plotSec3 = document.createElement("div")
+    plotSec3.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "twoHundred", "w-full")
+    let title3 = document.createElement("h3")
+    title3.appendChild(document.createTextNode("20X Cables"))
+    title3.classList.add("py-1", "bg-[#325D88]", "rounded-t-sm", "font-semibold", "text-xl", "text-white", "text-center")
+    plotSec3.appendChild(title3)
     plotSection.appendChild(plotSec1)
     plotSection.appendChild(plotSec2)
+    plotSection.appendChild(plotSec3)
 }
 
 const hideOrRevealCards = (type, option)=>{
@@ -940,3 +959,4 @@ window.onload = ()=>{
         }
     }, 7000)
 }
+

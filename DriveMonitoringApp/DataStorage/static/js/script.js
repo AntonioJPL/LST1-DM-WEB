@@ -7,7 +7,6 @@
 const body = document.querySelector("body")
 const title = document.querySelector("title")
 const currentUrl = window.location.href
-
 /**
  * Creation of the Summary/Logs section and the interaction between tabs
  */
@@ -37,23 +36,29 @@ let modal = null
 let URLPath =  currentUrl.replace(/(driveMonitoring)?(loadPins)?\/?\??(date=)?(\d{4})?-?(\d{2})?-?(\d{2})?$/, "")
 let ULRParts = currentUrl.split("/")
 if(ULRParts.length == 5 && ULRParts[ULRParts.length-1] == ""){
-    history.pushState({mode: "URLUpdate"}, "URLUpdate", ULRParts[ULRParts.length-2])
+    history.pushState({mode: "URLUpdate"}, "", ULRParts[ULRParts.length-2])
 }
 
 const runLoader = ()=>{
-    modal = document.createElement("div")
-    modal.classList.add("modal", "w-full", "h-full", "bg-black/25", "top-0", "left-0", "flex", "justify-center", "items-center")
-    let loaderSpace = document.createElement("div")
-    loaderSpace.classList.add("w-full", "h-full", "relative", "flex", "justify-center", "items-center")
-    let loaderImage = document.createElement("img")
-    loaderImage.setAttribute("src", URLPath+"static/img/CTA-Loader.png")
-    loaderImage.classList.add("absolute", "translate-y-[1.65rem]", "-translate-x-[1.3rem]", "w-[35rem]", "h-[23.33rem]")
-    let loaderBar = document.createElement("div")
-    loaderBar.classList.add("Bar", "rounded-full", "border-white", "border","absolute" , "w-[17.5rem]", "h-[17.5rem]")
-    loaderSpace.appendChild(loaderBar)
-    loaderSpace.appendChild(loaderImage)
-    modal.appendChild(loaderSpace)
-    body.appendChild(modal)
+    if (modal == null){
+        modal = document.createElement("div")
+        modal.classList.add("modal", "w-full", "h-full", "bg-black/25", "top-0", "left-0", "flex", "justify-center", "items-center")
+        let loaderSpace = document.createElement("div")
+        loaderSpace.classList.add("w-full", "h-full", "relative", "flex", "justify-center", "items-center")
+        let loaderImage = document.createElement("img")
+        loaderImage.setAttribute("src", URLPath+"static/img/CTA-Loader.png")
+        loaderImage.classList.add("absolute", "translate-y-[1.65rem]", "-translate-x-[1.3rem]", "w-[35rem]", "h-[23.33rem]")
+        let loaderBar = document.createElement("div")
+        loaderBar.classList.add("Bar", "rounded-full", "border-white", "border","absolute" , "w-[17.5rem]", "h-[17.5rem]")
+        loaderSpace.appendChild(loaderBar)
+        loaderSpace.appendChild(loaderImage)
+        modal.appendChild(loaderSpace)
+        body.appendChild(modal)
+    }else{
+        if(modal.classList.contains("hidden")){
+            modal.classList.remove("hidden")
+        }
+    }
     body.classList.add("overflow-hidden")
 }
 
@@ -61,15 +66,13 @@ const deactivateLoader =()=>{
     if(modal == null){
         modal = document.querySelector("div.modal")
     }
-    body.removeChild(modal)
+    modal.classList.add("hidden")
     body.classList.remove("overflow-hidden")
 }
 
-runLoader()
-setTimeout(deactivateLoader, 1000)
 /**
  * Function that generates the basic structure 
- */
+*/
 const generateStructure = ()=>{
     contenSection = document.querySelector("div.textData")
     contenSection.innerHTML = ""
@@ -102,8 +105,9 @@ const generateStructure = ()=>{
 }
 /**
  * Function to fetch the data from mongodb
- */
+*/
 const fetchLatestData = async(date = null) => {
+    runLoader()
     let serverRes = null
     let urlParts = currentUrl.split("/")
     if(urlParts[urlParts.length-2] == "driveMonitoring" || urlParts[urlParts.length-1] == "driveMonitoring"){
@@ -458,7 +462,6 @@ const loadFilters = ()=>{
     operationInput.addEventListener("change", ()=>{
         if(operationInput.value != "All"){
             dataFiltered = generalData.data.filter((element)=> element.type == operationInput.value)
-            console.log(dataFiltered)
             dateInput.innerHTML = ""
             dateInput.appendChild(defaultDate)
             timeInput.innerHTML = ""
@@ -599,7 +602,6 @@ const loadFilters = ()=>{
                     let evento = new Event("click")
                     divLogs.dispatchEvent(evento)
                 }
-                let filteredData =  []
                 if(selectedFilters["date"] != "All"){
                     filteredData = generalData.data.data.filter((element) => selectedFilters["date"] == element.Sdate)
                 }
@@ -774,13 +776,13 @@ const startInputButtons = ()=>{
         let url = currentUrl.split("/")
         if(url.length == 4){
             if(!currentUrl.includes("/"+url[url.length-1]+"/?date="+input.value)){
-                history.pushState({date: input.value}, "date", "/"+url[url.length-1]+"/?date="+input.value)
+                history.pushState({date: input.value}, "", "/"+url[url.length-1]+"/?date="+input.value)
             }
         }else{
             if(!currentUrl.includes("/"+url[url.length-2]+"/?date="+input.value) && history.state != null){
-                history.replaceState({date: input.value}, "date", "/"+url[url.length-2]+"/?date="+input.value)
+                history.replaceState({date: input.value}, "", "/"+url[url.length-2]+"/?date="+input.value)
             }else{
-                history.pushState({date: input.value}, "date", "/"+url[url.length-2]+"/?date="+input.value)
+                history.pushState({date: input.value}, "", "/"+url[url.length-2]+"/?date="+input.value)
             }
         }
         updateAnchorHref()
@@ -817,7 +819,6 @@ const startInputButtons = ()=>{
     }
 }
 const changeTitleAndFetch = (value)=>{
-    console.log(value)
     runLoader()
     titleParts = title.innerHTML.split("-")
     title.innerHTML = ""
@@ -827,11 +828,11 @@ const changeTitleAndFetch = (value)=>{
     console.log(url)
     if(history.state == null){
         if(!currentUrl.includes("/"+url[url.length-1]+"/?date="+value)){
-            history.pushState({date: value}, "date", "/"+url[url.length-1]+"/?date="+value)
+            history.pushState({date: value}, "", "/"+url[url.length-1]+"/?date="+value)
         }
     }else{
         if(!currentUrl.includes("/"+url[url.length-2]+"/?date="+value)){
-            history.replaceState({date: value}, "date", "/"+url[url.length-2]+"/?date="+value)
+            history.replaceState({date: value}, "", "/"+url[url.length-2]+"/?date="+value)
         }
     }
     updateAnchorHref()
@@ -844,13 +845,13 @@ const startPlotSections = ()=>{
     plotSection.classList.add("flex", "flex-col", "items-center")
     plotSection.innerHTML = ""
     let plotSec1 = document.createElement("div")
-    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "cablesImages", "w-auto", "bg-black/10")
+    plotSec1.classList.add("border-[#325D88]", "border-[0.25rem]", "flex", "flex-col", "rounded-lg", "cablesImages", "w-auto")
     let image1 = document.createElement("img")
     image1.setAttribute("src", "/static/img/LST-Figure-10X.png")
-    image1.classList.add("h-[25rem]")
+    image1.classList.add("h-[27.5rem]")
     let image2 = document.createElement("img")
     image2.setAttribute("src", "/static/img/LST-Figure-20X.png")
-    image2.classList.add("h-[25rem]")
+    image2.classList.add("h-[27.5rem]")
     let divImages = document.createElement("div")
     divImages.classList.add("flex", "justify-center", "gap-x-3")
     divImages.appendChild(image2)
@@ -937,9 +938,7 @@ const updateAnchorHref = ()=>{
     }else{
         driveMonitoringButton.href = driveMonHref.replace(/=(.)*$/, "="+history.state["date"])
     }
-    driveMonitoringButton.addEventListener("click", runLoader)
     let loadPinsButton = document.querySelector(".loadPins")
-    loadPinsButton.addEventListener("click", runLoader)
     let loadPinsHref = loadPinsButton.href
     if(!loadPinsHref.includes("date")){
         loadPinsButton.href = loadPinsButton.href+"/?date="+history.state["date"]
@@ -953,10 +952,11 @@ const checkLoader = ()=>{
     return foundModal != null
 }
 window.onload = ()=>{
+    console.log("Page is loaded")
     setTimeout(()=>{
         if(checkLoader()){
             deactivateLoader()
         }
-    }, 7000)
+    }, 1000)
 }
 

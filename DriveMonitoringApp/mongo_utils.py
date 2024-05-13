@@ -1,8 +1,4 @@
-from django.http import HttpResponse
 import pymongo
-from django.conf import settings
-from django.http import JsonResponse
-import json
 from bson.json_util import dumps, loads
 from bson import ObjectId
 import os
@@ -11,7 +7,6 @@ from datetime import datetime
 import datetime as DT
 import pytz
 from django.contrib.staticfiles import finders
-import pandas as pd
 
 class MongoDb:
 

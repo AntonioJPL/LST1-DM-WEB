@@ -125,7 +125,6 @@ const fetchLatestData = async(date = null) => {
             .then(response => response.json())
         }
         if(generalData.data.Message == null){
-            console.log(generalData)
             initializeFiltersSection()
             generateStructure()
             showAllData(generalData.data)
@@ -133,6 +132,7 @@ const fetchLatestData = async(date = null) => {
             filters = serverRes.filters
             summaryData = data.filter(element => element.LogStatus != null)
             startInputButtons()
+            createTopButton()
             startSummary()
             loadFilters()
             fillLogs()
@@ -162,6 +162,7 @@ const fetchLatestData = async(date = null) => {
         }
         if(serverRes.Message == null){
             startInputButtons()
+            createTopButton()
             startPlotSections()
             showLoadPins(serverRes.plots)
         }else{
@@ -248,7 +249,6 @@ const printAllLogs = ()=>{
  */
 const filterLogs = ()=>{
     divContent.innerHTML = ""
-    console.log(selectedFilters["operation"])
     let prevLine = null
     let dataFound = null
     let increment = 0
@@ -571,7 +571,6 @@ const loadFilters = ()=>{
     filterButton.appendChild(document.createTextNode("Filter data"))
     filterButton.addEventListener("click", (e)=>{
         e.preventDefault()
-        window.scrollTo({top: 0, left: 0, behavior: "smooth"})
         if(operationInput.value != "All" && dateInput.value != "All" && timeInput.value != "All"){
             selectedFilters["operation"] = operationInput.value
             selectedFilters["date"] = dateInput.value
@@ -648,7 +647,6 @@ const loadFilters = ()=>{
         if(divLogs.classList.contains("bg-[#325D88]")){
            printAllLogs()
         }
-        console.log("Clearing")
         hideOrRevealCards("All", "show")
     })
 
@@ -698,7 +696,6 @@ const showAllData = (data)=>{
         }
 
         card.appendChild(title)
-        //card.appendChild(summary)
         card.appendChild(histograms)
         graphicContents.appendChild(card)
     });
@@ -800,8 +797,6 @@ const startInputButtons = ()=>{
         })
         searchButton.addEventListener("click", ()=>{
             let value = input.value
-            console.log(value)
-            console.log(generalData)
             if(Object.keys(generalData).length > 0){
                 if(generalData.data[0] != undefined){
                     if(value != generalData.data[0].data[0]["Sdate"]){
@@ -809,7 +804,6 @@ const startInputButtons = ()=>{
                         
                     }
                 }else{
-                    console.log("I inside the new else")
                     changeTitleAndFetch(value)
                 }
             }else{
@@ -824,8 +818,6 @@ const changeTitleAndFetch = (value)=>{
     title.innerHTML = ""
     title.appendChild(document.createTextNode(titleParts[0]+"-"+titleParts[1]+"-"+value))
     let url = currentUrl.split("/")
-    console.log("Second history")
-    console.log(url)
     if(history.state == null){
         if(!currentUrl.includes("/"+url[url.length-1]+"/?date="+value)){
             history.pushState({date: value}, "", "/"+url[url.length-1]+"/?date="+value)
@@ -931,7 +923,6 @@ const showLoadPins = (array) =>{
 
 const updateAnchorHref = ()=>{
     let driveMonitoringButton = document.querySelector(".driveMonitoring")
-    console.log(history.state)
     let driveMonHref = driveMonitoringButton.href
     if(!driveMonHref.includes("date")){
         driveMonitoringButton.href = driveMonitoringButton.href+"/?date="+history.state["date"]
@@ -952,7 +943,6 @@ const checkLoader = ()=>{
     return foundModal != null
 }
 window.onload = ()=>{
-    console.log("Page is loaded")
     setTimeout(()=>{
         if(checkLoader()){
             deactivateLoader()
@@ -960,3 +950,37 @@ window.onload = ()=>{
     }, 1000)
 }
 
+const createTopButton = ()=>{
+    let topButton = document.createElement("div")
+    topButton.classList.add("w-[4rem]", "fixed", "flex", "justify-center", "bottom-3", "right-3", "hover:bg-[#325D88]", "bg-[#6585a6]", "text-white", "font-semibold", "p-2", "rounded-lg", "border-[#325D88]", "border-2", "mt-3", "hidden", "translate-y-[15rem]")
+    let buttonImage = document.createElement("img")
+    buttonImage.setAttribute("src", URLPath+"static/img/arrow.svg")
+    buttonImage.classList.add("size-8", "-rotate-90", "select-none", "pointer-events-none")
+    topButton.appendChild(buttonImage)
+    topButton.addEventListener("click", ()=>{
+        window.scrollTo({top: 0, left: 0, behavior: "smooth"})
+    })
+    window.addEventListener("scroll", ()=>{
+        if(window.scrollY > 100){
+            if(topButton.classList.contains("hidden")){
+                if(topButton.classList.contains("slideDown")){
+                    topButton.classList.remove("slideDown")
+                }
+                topButton.classList.remove("hidden")
+                topButton.classList.add("slideUp")
+                topButton.classList.remove("translate-y-[15rem]")
+                
+            }
+        }else{
+            if(!topButton.classList.contains("hidden")){
+                if(topButton.classList.contains("slideUp")){
+                    topButton.classList.remove("slideUp")
+                }
+                topButton.classList.add("slideDown")
+                topButton.classList.add("translate-y-[15rem]")
+                setTimeout(()=>{topButton.classList.add("hidden")}, 300)
+            }
+        }
+    })
+    body.appendChild(topButton)
+}

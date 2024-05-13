@@ -11,6 +11,7 @@ div.modal{
     left: 0;
     height: 100vh;
 }
+
 @keyframes rotation {
     from{
         transform: rotate(0deg);
@@ -19,4 +20,28 @@ div.modal{
         transform: rotate(360deg);
     }
     
+}
+
+.slideUp{
+    animation: 0.3s linear slideUp
+}
+@keyframes slideUp {
+    from{
+        transform: translateY(15rem);
+    }
+    100%{
+        transform: translateY(0);
+    }
+}
+
+.slideDown{
+    animation: 0.3s linear slideDown
+}
+@keyframes slideDown {
+    from{
+        transform: translateY(0);
+    }
+    to{
+        transform: translateY(15rem);
+    }
 }

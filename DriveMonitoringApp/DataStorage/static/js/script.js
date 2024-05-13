@@ -7,9 +7,6 @@
 const body = document.querySelector("body")
 const title = document.querySelector("title")
 const currentUrl = window.location.href
-/**
- * Creation of the Summary/Logs section and the interaction between tabs
- */
 let contenSection = null
 let divSummary = null
 let divContent = null
@@ -38,7 +35,9 @@ let ULRParts = currentUrl.split("/")
 if(ULRParts.length == 5 && ULRParts[ULRParts.length-1] == ""){
     history.pushState({mode: "URLUpdate"}, "", ULRParts[ULRParts.length-2])
 }
-
+/**
+ * Function that shows the Loader modal and blocks the scroll on the website
+ */
 const runLoader = ()=>{
     if (modal == null){
         modal = document.createElement("div")
@@ -61,7 +60,9 @@ const runLoader = ()=>{
     }
     body.classList.add("overflow-hidden")
 }
-
+/**
+ * Function that locates the modal in case the modal variable is null and hides it. It also makes the website scrollable again
+ */
 const deactivateLoader =()=>{
     if(modal == null){
         modal = document.querySelector("div.modal")
@@ -69,9 +70,8 @@ const deactivateLoader =()=>{
     modal.classList.add("hidden")
     body.classList.remove("overflow-hidden")
 }
-
 /**
- * Function that generates the basic structure 
+ * Function that generates the basic structure of the website
 */
 const generateStructure = ()=>{
     contenSection = document.querySelector("div.textData")
@@ -104,7 +104,7 @@ const generateStructure = ()=>{
     divLogs.addEventListener("click", showLog)
 }
 /**
- * Function to fetch the data from mongodb
+ * Function to fetch the data from mongodb, it identifies whether the web is on driveMonitoring or loadPin websites. This is the main function in the code. After fetching it generates all the buttons and structures needed for the inteaction
 */
 const fetchLatestData = async(date = null) => {
     runLoader()
@@ -179,13 +179,12 @@ const fetchLatestData = async(date = null) => {
         }
     }
 }
+//input variable assignment
 input = document.querySelector(".input")
 fetchLatestData(input.value)
-
 /**
- * Function to generate the Summary and Logs contents
+ * Function that fills the logsData array with the commands found on data
  */
-
 const fillLogs = ()=>{
     if(data != null){
         data.forEach(element => {
@@ -200,6 +199,10 @@ const fillLogs = ()=>{
         });
     }
 }
+/**
+ * Function that shows the logs when the Summary is being displayed
+ * @param {*} e Its the event use to identify the button being clicked
+ */
 const showLog = (e)=>{
     divContent.scrollTop = 0
     if(logsData.length == 0){
@@ -245,7 +248,7 @@ const printAllLogs = ()=>{
     })
 }
 /**
- * Function that filters the log to the selected time and shows only thata section
+ * Function that filters the logs to the selected time, date and operation and shows only that section
  */
 const filterLogs = ()=>{
     divContent.innerHTML = ""
@@ -344,7 +347,9 @@ const filterLogs = ()=>{
         printAllLogs()
     }
 }
-
+/**
+ * Function that fills the summaryParsedData array with the commands found on summaryData
+ */
 const fillSummary = ()=>{
     if(summaryData != null){
         summaryData.forEach(element =>{
@@ -358,11 +363,12 @@ const fillSummary = ()=>{
         })
     }
 }
+/**
+ * Function that shows the summary again once Logs where being showed
+ * @param {*} e Its the event use to identify the button being clicked
+ */
 const showSummary = (e)=>{
     divContent.scrollTop = 0
-    if(summaryParsedData.length == 0){
-        fillSummary()
-    }
     if(e.target.nextSibling.classList.contains("bg-[#325D88]")){
         divContent.classList.remove("overflow-y-scroll")
         setTimeout(()=>{divContent.classList.add("overflow-y-scroll")}, 1)
@@ -373,21 +379,12 @@ const showSummary = (e)=>{
         divSummary.classList.toggle("bg-[#325D88]")
         summaryLabel.classList.add("font-semibold")
         divContent.innerHTML = ""
-        summaryParsedData.forEach(element => {
-            let parragraph = document.createElement("p")
-            parragraph.appendChild(document.createTextNode(element))
-            if(element.includes("error")){
-                parragraph.classList.add("text-red-500")
-            }else if(!element.includes("by user")){
-                parragraph.classList.add("text-black")
-            }else{
-                parragraph.classList.add("font-semibold")
-            }
-            parragraph.classList.add("text-lg", "ms-2")
-            divContent.appendChild(parragraph)
-        })
+        startSummary()
     }
 }
+/**
+ * Function that fills the summary in case it is empty and represents all the commands on the summaryParsedData inside the summary are on the DriveMonitoring Web
+ */
 const startSummary = ()=>{
     if(summaryParsedData.length == 0){
         fillSummary()
@@ -406,10 +403,8 @@ const startSummary = ()=>{
         divContent.appendChild(parragraph)
     })
 }
-
-
 /**
- * Creation of the Filters section
+ * Initialization of the Filters section, just the space
  */
 const initializeFiltersSection = ()=>{
     filtersSection = document.querySelector("div.filters")
@@ -428,7 +423,7 @@ const initializeFiltersSection = ()=>{
     sectionBody.classList.add("border", "border-[#325D88]", "border-[0.25rem]", "border-t-0", "w-full", "h-[10rem]", "rounded-b-lg", "flex", "flex-col", "items-center")
 }
 /**
- * Function to create the filter form and the inputs
+ * Function to create the filter form and the inputs inside it
  */
 const loadFilters = ()=>{
     let form = document.createElement("form")
@@ -562,7 +557,7 @@ const loadFilters = ()=>{
         }
     })
     /**
-     * Button creation
+     * Buttons creation
      */
     let buttons = document.createElement("div")
     buttons.classList.add("flex", "justify-evenly")
@@ -660,7 +655,7 @@ const loadFilters = ()=>{
     filtersCard.appendChild(sectionBody)
 }
 /**
- * Function that represents all the data recieved from the database
+ * Function that represents all the operation cards in the right div. Inside each card there are iframes representing interactive plots
  */
 const showAllData = (data)=>{
     let graphicContents = document.querySelector("div.graphicSection")
@@ -701,10 +696,13 @@ const showAllData = (data)=>{
     });
     contenSection.appendChild(graphicContents)
 }
-
-const sortByTime = (a,b) => {
-    return new Date(a.Edate+" "+a.Etime) - new Date(b.Edate+" "+b.Etime)
-}
+/**
+ * Function that restores the default appeareance of the website restoring all the filters and showing the hidden cards
+ * @param {*} dateInput HTML Element filter for the date input
+ * @param {*} defaultDate Value of the default date => "All"
+ * @param {*} timeInput HTML Element filter for the time input
+ * @param {*} defaultTime Value of the default time => "All"
+ */
 const resetFilters = (dateInput, defaultDate,  timeInput, defaultTime)=>{
     dateInput.innerHTML = ""
     dateInput.appendChild(defaultDate)
@@ -720,7 +718,7 @@ const resetFilters = (dateInput, defaultDate,  timeInput, defaultTime)=>{
 
 }
 /**
- * Function that adds the interactive buttons to the date input
+ * Function that adds the interactive buttons around the date input, this also generates the interactivity (Navigating through the dates and searching) and calls other functions to continue fetching the new information.
  */
 const startInputButtons = ()=>{
     let div = document.querySelector("div.dateInput")
@@ -812,6 +810,10 @@ const startInputButtons = ()=>{
         })
     }
 }
+/**
+ * This function changes the title and fetches the new information when the date input is changed and the search button is pressed
+ * @param {*} value This is the new value of the date input
+ */
 const changeTitleAndFetch = (value)=>{
     runLoader()
     titleParts = title.innerHTML.split("-")
@@ -831,7 +833,9 @@ const changeTitleAndFetch = (value)=>{
     fetchLatestData(value)
     setTimeout(deactivateLoader, 1000)
 }
-
+/**
+ * Function that starts the plot sections, it generates the cables representation, the 10X cables and the 20X cables sections on the Load Pins Website
+ */
 const startPlotSections = ()=>{
     plotSection = document.querySelector("div.plotsArea")
     plotSection.classList.add("flex", "flex-col", "items-center")
@@ -869,7 +873,11 @@ const startPlotSections = ()=>{
     plotSection.appendChild(plotSec2)
     plotSection.appendChild(plotSec3)
 }
-
+/**
+ * Function that shows or hides the sections when filter is applied or filters are cleared
+ * @param {*} type Is the operation type, coul be: "Track", "Park-in", "Park-out" or "GoToPos"
+ * @param {*} option could be either "show" or "hide"
+ */
 const hideOrRevealCards = (type, option)=>{
     let graphicSection = document.querySelector("div.graphicSection")
     let GSChilds = [...graphicSection.children]
@@ -902,7 +910,10 @@ const hideOrRevealCards = (type, option)=>{
             break
     }
 }
-
+/**
+ * Function that creates an iframe and references each one the array strings loading the interactive plots
+ * @param {*} array It contains two strings which are the urls for the interactive plots
+ */
 const showLoadPins = (array) =>{
     array.forEach(element => {
         let plotDiv = document.createElement("div")
@@ -920,7 +931,9 @@ const showLoadPins = (array) =>{
         }
     })
 }
-
+/**
+ * Function that refresh the anchor (DriveMonitoring, and Load Pin navigation buttons) hrefs to the new date selected
+ */
 const updateAnchorHref = ()=>{
     let driveMonitoringButton = document.querySelector(".driveMonitoring")
     let driveMonHref = driveMonitoringButton.href
@@ -937,7 +950,10 @@ const updateAnchorHref = ()=>{
         loadPinsButton.href = loadPinsHref.replace(/=(.)*$/, "="+history.state["date"])
     }
 }
-
+/**
+ * Function that check if the modal is being displayed
+ * @returns True if the modal is being displayed or false if it is not
+ */
 const checkLoader = ()=>{
     let foundModal = document.querySelector("div.modal")
     return foundModal != null
@@ -950,6 +966,9 @@ window.onload = ()=>{
     }, 1000)
 }
 
+/**
+ * Function that creates the "Return to top" button and adds the functionalities to it
+ */
 const createTopButton = ()=>{
     let topButton = document.createElement("div")
     topButton.classList.add("w-[4rem]", "fixed", "flex", "justify-center", "bottom-3", "right-3", "hover:bg-[#325D88]", "bg-[#6585a6]", "text-white", "font-semibold", "p-2", "rounded-lg", "border-[#325D88]", "border-2", "mt-3", "hidden", "translate-y-[15rem]")

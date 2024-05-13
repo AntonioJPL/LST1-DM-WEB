@@ -8,6 +8,7 @@ import datetime as DT
 import pytz
 from django.contrib.staticfiles import finders
 
+#Class containing all the Database information and functions
 class MongoDb:
 
     my_client = pymongo.MongoClient('localhost', 27005)
@@ -48,6 +49,7 @@ class MongoDb:
             {"name": "GoToPosition"}
         ])
     
+    #Function that returns all the logs CHECK THIS FUNCT
     def getLogsData(self):
         #source ~/.bash_profile needed
         PORT = os.getenv("DB_HOST")
@@ -58,9 +60,7 @@ class MongoDb:
             datalist[id] = element
             datalist[id]["_id"] = id
         return datalist
-
-
-
+    #Function that returns all the logs data in between an operation Tmin and Tmax value, if there is no operation or there are more than one operation for the same date it returns a Message
     def listLogs(self, date):
         operation = list(self.dbname["Operations"].find({"Date": date}))
         if len(operation) == 1:
@@ -87,9 +87,8 @@ class MongoDb:
             return {"Message": "There is no data to show"}
         if len(operation) > 1:
             return {"Message": "There is more than one operation in this date"}
-
+    #Function that returns all the general data including the plots urls CHECK THIS
     def listData(self, date):
-        #TODO Find a way to get the start and end date and time to filter the data. IMPORTANT !! Have to get it from the LOGS !
         operation = list(self.dbname["Operations"].find({"Date": date}))
         if len(operation) == 1:
             start = datetime.fromtimestamp(operation[0]["Tmin"])
@@ -125,6 +124,7 @@ class MongoDb:
             return {"Message": "There is no data to show"}
         if len(operation) > 1:
             return {"Message": "There is more than one operation in this date"}
+    #Function that stores an operation entry
     def storeOperation(self, data):
         if len(self.dbname["Operations"].index_information()) == 1:
             self.dbname["Operations"].create_index([('Date', pymongo.ASCENDING), ("Tmin", pymongo.ASCENDING), ("Tmax", pymongo.ASCENDING)], unique=True)
@@ -133,7 +133,7 @@ class MongoDb:
         except Exception:
             #print()
             print("Duplicated Operation entry on Date: "+data["Date"])
-
+    #Function that stores a log entry
     def storeLogs(self, data):
         if data["LogStatus"] != None:
             statusId = self.dbname["LogStatus"].find_one({"name":data["LogStatus"]}, {"name": 0})
@@ -154,11 +154,9 @@ class MongoDb:
 
         try:
             self.dbname["Logs"].insert_one(data)
-            #print("Find result")
-            #print(len(list(self.dbname["Operations"].find(operation))) == 0)
         except Exception:
             pass
-            #print("Duplicated Log entry on Date: "+data["Date"]+", and Time: "+data["Time"])
+    #Function that stores a data entry
     def storeGeneralData(self, data):
         typeId = self.dbname["Types"].find_one({"name": data["type"]}, {"name": 0})
         data["type"] = str(typeId["_id"])
@@ -169,7 +167,7 @@ class MongoDb:
             return True
         except Exception:
             pass
-            #print("Duplicated Data entry on Sdate: "+str(data["Sdate"])+", type: "+str(data["type"]))
+    #Function that stores a position entry
     def storePosition(self, data):
         if len(self.dbname["Position"].index_information()) == 1:
             self.dbname["Position"].create_index([('T', pymongo.ASCENDING), ("Az", pymongo.ASCENDING), ("ZA", pymongo.ASCENDING)], unique=True)
@@ -177,8 +175,7 @@ class MongoDb:
             self.dbname["Position"].insert_one(data)
         except Exception:
             pass
-            ##print("Duplicated Position entry on T: "+str(data["T"]))
-            
+    #Function that stores a loadpin entry        
     def storeLoadPin(self, data):
         if len(self.dbname["Load_Pin"].index_information()) == 1:
             self.dbname["Load_Pin"].create_index([('T', pymongo.ASCENDING), ("LoadPin", pymongo.ASCENDING), ("Load", pymongo.ASCENDING)], unique=True)
@@ -186,8 +183,7 @@ class MongoDb:
             self.dbname["Load_Pin"].insert_one(data)
         except Exception:
             pass
-            ##print("Duplicated LoadPin entry on T: "+data["T"]+", Pin: "+str(data["LoadPin"]))
-    
+    #Function that stores a track entry
     def storeTrack(self, data):
         if len(self.dbname["Track"].index_information()) == 1:
             self.dbname["Track"].create_index([('T', pymongo.ASCENDING), ("Azth", pymongo.ASCENDING), ("ZAth", pymongo.ASCENDING), ("vsT0", pymongo.ASCENDING), ("Tth", pymongo.ASCENDING)], unique=True)
@@ -195,9 +191,7 @@ class MongoDb:
             self.dbname["Track"].insert_one(data)
         except Exception:
             pass
-            #print("Duplicated Track entry on T: "+str(data["T"]))
-                   
-
+    #Function that stores a torque entry               
     def storeTorque(self, data):
         if len(self.dbname["Torque"].index_information()) == 1:
             self.dbname["Torque"].create_index([('T', pymongo.ASCENDING), ("Az1_mean", pymongo.ASCENDING), ("Az1_min", pymongo.ASCENDING), ("Az1_max", pymongo.ASCENDING), ("Az2_mean", pymongo.ASCENDING), ("Az2_min", pymongo.ASCENDING), ("Az2_max", pymongo.ASCENDING), ("Az3_mean", pymongo.ASCENDING), ("Az3_min", pymongo.ASCENDING), ("Az3_max", pymongo.ASCENDING), ("Az4_mean", pymongo.ASCENDING), ("Az4_min", pymongo.ASCENDING), ("Az4_max", pymongo.ASCENDING), ("El1_mean", pymongo.ASCENDING), ("El1_min", pymongo.ASCENDING), ("El1_max", pymongo.ASCENDING), ("El2_mean", pymongo.ASCENDING), ("El2_min", pymongo.ASCENDING), ("El2_max", pymongo.ASCENDING)], unique=True)
@@ -205,8 +199,7 @@ class MongoDb:
             self.dbname["Torque"].insert_one(data)
         except Exception:
             pass
-            #print("Duplicated Torque entry on T: "+str(data["T"]))
-        
+    #Function that stores a accuracy entry    
     def storeAccuracy(self, data):
         if len(self.dbname["Accuracy"].index_information()) == 1:
             self.dbname["Accuracy"].create_index([('T', pymongo.ASCENDING), ("Azmean", pymongo.ASCENDING), ("Azmin", pymongo.ASCENDING), ("Azmax", pymongo.ASCENDING), ("Zdmean", pymongo.ASCENDING), ("Zdmin", pymongo.ASCENDING), ("Zdmax", pymongo.ASCENDING)], unique=True)
@@ -214,8 +207,7 @@ class MongoDb:
             self.dbname["Accuracy"].insert_one(data)
         except Exception:
             pass
-            #print("Duplicated Accuracy entry on T: "+str(data["T"]))
-            
+    #Function that stores a bend_model entry        
     def storeBendModel(self, data):
         if len(self.dbname["Bend_Model"].index_information()) == 1:
             self.dbname["Bend_Model"].create_index([('T', pymongo.ASCENDING), ("AzC", pymongo.ASCENDING), ("ZAC", pymongo.ASCENDING)], unique=True)
@@ -223,11 +215,10 @@ class MongoDb:
             self.dbname["Bend_Model"].insert_one(data)
         except Exception:
             pass
-            #print("Duplicated Bend Model entry on T: "+str(data["T"]))
-                   
+    #Function that returns true if there is data on the Data collection or false if there is not           
     def isData(self):
-        return True if len(self.dbname["Data"].distinct("_id")) > 0 or len(self.dbname["Data"].distinct("_id")) > 0 else False
-            
+        return True if len(self.dbname["Data"].distinct("_id")) > 0 else False
+    #Function that returns the latest date stored. It takes it from the logs      
     def getLatestDate(self):
         result =  list(self.dbname["Logs"].find({}, {"_id": 0 ,"Date": 1}).sort({"Date": -1}).limit(1))
         dateParts = result[0]["Date"].split("-")
@@ -235,6 +226,7 @@ class MongoDb:
         newDay = str(newDay)
         result = dateParts[0]+"-"+dateParts[1]+"-"+newDay.zfill(2)
         return result
+    #Function that returns the types, dates and times for the given date as an object
     def getFilters(self, date):
         if(date == None):
             date == self.getLatestDate(self)
@@ -252,10 +244,11 @@ class MongoDb:
                 times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
             response["times"] = times
         return response 
+    #TEST CHECK
     def getFirstData(self):
         return self.dbname["Data"].find_one({"Sdate": "2024-02-03"})
+    #Function that returns the position document values between a minimum and maximum timestamps values
     def getPosition(self, tmin, tmax):
-
         result = {}
         result["T"] = {}
         result["Az"] = {}
@@ -269,6 +262,7 @@ class MongoDb:
             result["ZA"][index] = data["ZA"]
             index += 1
         return result
+    #Function that returns the loadpins document values between a minimum and maximum timestamps values
     def getLoadPin(self, tmin, tmax):
         result = {}
         result["T"] = {}
@@ -284,6 +278,7 @@ class MongoDb:
             result["Load"][index] = data["Load"]
             index += 1
         return result
+    #Function that returns all the loadpin values inside an operation date
     def getAllLoadPin(self, date):
         result = {}
         result["T"] = {}
@@ -302,6 +297,7 @@ class MongoDb:
             result["Load"][index] = data["Load"]
             index += 1
         return result
+    #Function that returns the track document values between a minimum and maximum timestamps values
     def getTrack(self, tmin, tmax):
         result = {}
         result["T"] = {}
@@ -322,6 +318,7 @@ class MongoDb:
             result["Tth"][index] = datetime.fromtimestamp(dataF, tz=pytz.utc)
             index += 1
         return result
+    #Function that returns the torque document values between a minimum and maximum timestamps values
     def getTorque(self, tmin, tmax):
         result = {}
         result["T"] = {}
@@ -370,6 +367,7 @@ class MongoDb:
             result["El2_max"][index] = data["El2_max"]
             index += 1
         return result
+    #Function that returns the accuracy document values between a minimum and maximum timestamps values
     def getAccuracy(self, tmin, tmax):
         result = {}
         result["T"] = {}
@@ -394,26 +392,23 @@ class MongoDb:
             result["Zdmax"][index] = data["Zdmax"]
             index += 1
         return result
+    #Function that returns the bending_model document values between a minimum and maximum timestamps values
     def getBM(self, tmin, tmax):
         result = {}
         result["T"] = {}
         result["AzC"] = {}
         result["ZAC"] = {}
         index = 0
-        #tmin = str(tmin).replace(".0", "")+"000"
-        #tmax = str(tmax).replace(".0", "")+"000"
-        #print(tmin)
-        #print(list(self.dbname["Bend_Model"].find({'T': {'$gt': tmin, '$lt': tmax}})))
         for data in self.dbname["Bend_Model"].find({'T': {'$gt': int(tmin), '$lt': int(tmax)}}):
-            #dataF = float(data["T"])
-            #dataF = dataF/1000
             result["T"][index] = data["T"]
             result["AzC"][index] = data["AzC"]
             result["ZAC"][index] = data["ZAC"]
             index += 1
         return result
+    #Function that returns the operation document of the given date value
     def getOperation(self, date):
         return list(self.dbname["Operations"].find({"Date": date}))
+    
     def getDatedData(self, tmin, tmax):
         start = datetime.fromtimestamp(tmin)
         start = str(start).split(" ")

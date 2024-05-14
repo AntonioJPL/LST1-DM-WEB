@@ -45,10 +45,10 @@ const runLoader = ()=>{
         let loaderSpace = document.createElement("div")
         loaderSpace.classList.add("w-full", "h-full", "relative", "flex", "justify-center", "items-center")
         let loaderImage = document.createElement("img")
-        loaderImage.setAttribute("src", URLPath+"static/img/CTA-Loader.png")
-        loaderImage.classList.add("absolute", "translate-y-[1.65rem]", "-translate-x-[1.3rem]", "w-[35rem]", "h-[23.33rem]")
+        loaderImage.setAttribute("src", URLPath+"static/img/CTAO-Loader.png")
+        loaderImage.classList.add("absolute", "translate-y-[0]", "-translate-x-[0]", "w-[22.5rem]", "h-[15rem]")
         let loaderBar = document.createElement("div")
-        loaderBar.classList.add("Bar", "rounded-full", "border-white", "border","absolute" , "w-[17.5rem]", "h-[17.5rem]")
+        loaderBar.classList.add("Bar", "rounded-full", "border-[#00E4D8]", "border","absolute" , "w-[17.5rem]", "h-[17.5rem]")
         loaderSpace.appendChild(loaderBar)
         loaderSpace.appendChild(loaderImage)
         modal.appendChild(loaderSpace)
@@ -180,7 +180,32 @@ const fetchLatestData = async(date = null) => {
     }
 }
 //input variable assignment
+let isPickerOpen = false
 input = document.querySelector(".input")
+let description = document.querySelector(".description")
+input.addEventListener("mouseover", ()=>{
+    if(description.classList.contains("hidden") && !isPickerOpen){
+        description.classList.remove("hidden")
+    }
+})
+input.addEventListener("click", ()=>{
+    if(!description.classList.contains("hidden")){
+        description.classList.add("hidden")
+    }
+    isPickerOpen = true
+})
+input.addEventListener("mouseout", ()=>{
+    if(!description.classList.contains("hidden")){
+        description.classList.add("hidden")
+    }
+})
+window.addEventListener("click", (e)=>{
+    console.log(e.target)
+    if(isPickerOpen && e.target != input){
+        isPickerOpen = false
+    }
+})
+
 fetchLatestData(input.value)
 /**
  * Function that fills the logsData array with the commands found on data
@@ -716,7 +741,7 @@ const startInputButtons = ()=>{
         let searchButton = document.createElement("button")
         searchButton.classList.add("rounded-xl", "bg-[#325D88]", "search")
         let buttonImage3 = document.createElement("img")
-        buttonImage3.setAttribute("src", URLPath+"static/img/calendarSearch.svg")
+        buttonImage3.setAttribute("src", URLPath+"static/img/searchNew.svg")
         buttonImage3.classList.add("size-6", "p-1")
         searchButton.appendChild(buttonImage3)
         div.appendChild(backButton)

@@ -9,4 +9,4 @@ services:
     ports:  # Exposes container ports: host IP, host port and container port
       - '27005:27017'
     volumes:  # mount host paths or named volumes that MUST be accessible by service containers
-      - /Users/antoniojose/Desktop/mongodb:/data/db
+      - ./mongodb:/data/db

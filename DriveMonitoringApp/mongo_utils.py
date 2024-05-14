@@ -10,12 +10,10 @@ from django.contrib.staticfiles import finders
 
 #Class containing all the Database information and functions
 class MongoDb:
-
     my_client = pymongo.MongoClient('localhost', 27005)
     dbname = my_client['Drive-Monitoring']
     collection_logs = dbname["Logs"]
     collection_data = dbname["Data"]
-   
     #Function that initialize the general data into MongoDB
     def __init__(self):
         self.dbname["CommandStatus"].insert_many([
@@ -225,9 +223,13 @@ class MongoDb:
             response["dates"] = [start[0], end[0]]
             times = {}
             for date in response["dates"]:
-                times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
+                if date == response["dates"][0]:
+                    startTime = start[1]
+                    times[date] = list(self.dbname["Logs"].aggregate([{"$match":{"$and": [{"Date": date}, {"Time": {"$gte": startTime}}]}}, {"$project": {"_id": 0, "Time": 1}}]))
+                else:
+                    times[date] = list(self.dbname["Logs"].aggregate([{"$match":{"$and": [{"Date": date}, {"Time": {"$lte": end[1]}}]}}, {"$project": {"_id": 0, "Time": 1}}]))
             response["times"] = times
-        return response 
+        return response
     #Function that returns the position document values between a minimum and maximum timestamps values
     def getPosition(self, tmin, tmax):
         result = {}

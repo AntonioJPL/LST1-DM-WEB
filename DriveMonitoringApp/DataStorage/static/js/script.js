@@ -227,7 +227,6 @@ const showLog = (e)=>{
             printAllLogs()
         }
     }
-    
 }
 /**
  * Function that prints all the logsData content
@@ -536,8 +535,8 @@ const loadFilters = ()=>{
             if(operationInput.value == "All"){
                 filters.times[dateInput.value].forEach(time => {
                     let option = document.createElement("option")
-                    option.setAttribute("value", time)
-                    option.appendChild(document.createTextNode(time))
+                    option.setAttribute("value", time.Time)
+                    option.appendChild(document.createTextNode(time.Time))
                     timeInput.appendChild(option)
                 })
             }else{
@@ -588,34 +587,12 @@ const loadFilters = ()=>{
                     divLogs.dispatchEvent(evento)
                 }
                 hideOrRevealCards(selectedFilters["operation"], "hide")
-
             }else if(operationInput.value == "All" && dateInput.value != "All" && timeInput.value != "All"){
                 selectedFilters["date"] = dateInput.value
                 selectedFilters["time"] = timeInput.value
                 if(divLogs.classList.contains("bg-[#325D88]")){
                     let evento = new Event("click")
                     divLogs.dispatchEvent(evento)
-                }
-                if(selectedFilters["date"] != "All"){
-                    filteredData = generalData.data.data.filter((element) => selectedFilters["date"] == element.Sdate)
-                }
-                if(selectedFilters["time"] != "All"){
-                    let found = false
-                    for (let i = 0; i < logsData.length; i++) {
-                        if(logsData[i] != "-----------------------" && !found){
-                            let elementos = logsData[i].split(" ")
-                            if(elementos[0] == selectedFilters["time"]){
-                                found = true
-                            }
-                        }else{
-                            if(logsData[i] == "-----------------------" && found){
-                                let elementos = logsData[i-1].split(" ")
-                                filteredData = generalData.data.data.filter((element) => elementos[0] == element.Etime)
-                                break
-                            }
-                        }
-                        
-                    }
                 }
                 hideOrRevealCards(selectedFilters["operation"], "show")
             }else{

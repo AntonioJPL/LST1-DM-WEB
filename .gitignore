@@ -124,3 +124,7 @@ Track_log_20240208.txt
 Track_log_20240209.txt
 
 DriveMonitoringWeb/
+
+DriveMonitoringApp/__pycache__
+DriveMonitoringApp/DataStorage/__pycache__
+DriveMonitoringApp/DriveMonitoringApp/__pycache__

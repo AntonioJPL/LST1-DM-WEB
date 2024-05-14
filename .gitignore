@@ -1,5 +1,7 @@
+__pycache__
 
-__pycache__/
+*/__pycache__/
+*/*/__pycache__
 
 .venv/
 
@@ -128,3 +130,5 @@ DriveMonitoringWeb/
 DriveMonitoringApp/__pycache__
 DriveMonitoringApp/DataStorage/__pycache__
 DriveMonitoringApp/DriveMonitoringApp/__pycache__
+
+mongodb

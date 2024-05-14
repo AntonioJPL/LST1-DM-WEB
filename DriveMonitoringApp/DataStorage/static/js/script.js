@@ -192,6 +192,7 @@ input.addEventListener("click", ()=>{
     if(!description.classList.contains("hidden")){
         description.classList.add("hidden")
     }
+    input.showPicker()
     isPickerOpen = true
 })
 input.addEventListener("mouseout", ()=>{

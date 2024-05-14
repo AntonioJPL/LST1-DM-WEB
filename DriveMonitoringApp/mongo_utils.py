@@ -16,7 +16,7 @@ class MongoDb:
     collection_logs = dbname["Logs"]
     collection_data = dbname["Data"]
    
-    #Function that initialize the general data
+    #Function that initialize the general data into MongoDB
     def __init__(self):
         self.dbname["CommandStatus"].insert_many([
             {"name": "command sent"},
@@ -48,18 +48,6 @@ class MongoDb:
             {"name": "Start_Tracking"},
             {"name": "GoToPosition"}
         ])
-    
-    #Function that returns all the logs CHECK THIS FUNCT
-    def getLogsData(self):
-        #source ~/.bash_profile needed
-        PORT = os.getenv("DB_HOST")
-        print(PORT)
-        datalist = {}
-        for element in self.collection_logs.find():
-            id = str(element["_id"])
-            datalist[id] = element
-            datalist[id]["_id"] = id
-        return datalist
     #Function that returns all the logs data in between an operation Tmin and Tmax value, if there is no operation or there are more than one operation for the same date it returns a Message
     def listLogs(self, date):
         operation = list(self.dbname["Operations"].find({"Date": date}))
@@ -87,7 +75,7 @@ class MongoDb:
             return {"Message": "There is no data to show"}
         if len(operation) > 1:
             return {"Message": "There is more than one operation in this date"}
-    #Function that returns all the general data including the plots urls CHECK THIS
+    #Function that returns all the general data including the plots urls, it returns an object containing a "data" attribute. This attribut is an array of an object for each type of operation. Each object has data, file and type attributes. Data attribute contains all the data documents values of that type of operation in the given date. File attribute is an array of strings being this ones the urls to the interactive plots and the type attribute is a string identifier to this data group
     def listData(self, date):
         operation = list(self.dbname["Operations"].find({"Date": date}))
         if len(operation) == 1:
@@ -105,25 +93,22 @@ class MongoDb:
                 foundElement = list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}, {"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
                 if len(foundElement) > 0:
                     file = foundElement[0]["file"].split("/")
-                    print(file[0]+"/"+file[1]+"/"+file[2])
                     filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
                     file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
-                    print(file)
                     files = glob.glob(file+"/"+filename+"*")
                     plot["file"] = []
                     for i in range(0, len(files)):
                         files[i] = files[i].split("/")
-                        #print(files[i])
                         files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
                         plot["file"].append(files[i])
                     plot["data"]=foundElement
                     elements.append(plot)
-            #print(elements)
             return elements
         if len(operation) == 0: 
             return {"Message": "There is no data to show"}
         if len(operation) > 1:
             return {"Message": "There is more than one operation in this date"}
+    #INFO: All the store functions check if there is an index created and if not creates it. This is meant to happen just the first time. This is done right before trying to insert the data
     #Function that stores an operation entry
     def storeOperation(self, data):
         if len(self.dbname["Operations"].index_information()) == 1:
@@ -131,7 +116,6 @@ class MongoDb:
         try:
             self.dbname["Operations"].insert_one(data)
         except Exception:
-            #print()
             print("Duplicated Operation entry on Date: "+data["Date"])
     #Function that stores a log entry
     def storeLogs(self, data):
@@ -244,9 +228,6 @@ class MongoDb:
                 times[date] = self.dbname["Logs"].distinct("Time", {"Date": date})
             response["times"] = times
         return response 
-    #TEST CHECK
-    def getFirstData(self):
-        return self.dbname["Data"].find_one({"Sdate": "2024-02-03"})
     #Function that returns the position document values between a minimum and maximum timestamps values
     def getPosition(self, tmin, tmax):
         result = {}
@@ -408,15 +389,17 @@ class MongoDb:
     #Function that returns the operation document of the given date value
     def getOperation(self, date):
         return list(self.dbname["Operations"].find({"Date": date}))
-    
+    #Function that returns the data docuemtn values between a minimum and maximum timestamps values, this timestamp values are parsed into date and time values to compare the Stime, Etime and Sdate and Edate values
     def getDatedData(self, tmin, tmax):
         start = datetime.fromtimestamp(tmin)
         start = str(start).split(" ")
         end = datetime.fromtimestamp(tmax)
         end = str(end).split(" ")
         return list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}]))
+    #Function that returns all the operation types as a list
     def getOperationTypes(self):
         return list(self.dbname["Types"].find())
+    #Function that generates the Load Pin plot url and returns them. It generates the url based on the data "file" parameter and replaces the end of it with the found plot path.
     def getLPPlots(self, date):
         operation = list(self.dbname["Operations"].find({"Date": date}))
         if len(operation) > 0:
@@ -428,9 +411,7 @@ class MongoDb:
             path = path.replace(pathParts[-2]+"/"+pathParts[-1], "LoadPin")
             file = finders.find(path)
             if file is not None:
-                print(file)
                 files = glob.glob(file+"/"+"LoadPin_"+date+"*")
-                print(files)
                 plots = []
                 for i in range(0, len(files)):
                     files[i] = files[i].split("/")
@@ -444,8 +425,11 @@ class MongoDb:
                 return {"Message": "There is no data to show"}
         else:
             return {"Message": "There is no data to show"}
+    #Function that returns the las 7 operation stored in the DB, this is used to check if the plots are generated on the LibDisplayTrackStore.py file
+    def getLast7Operations(self):
+        return list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 7}]))
+    #Function that checks if the date passed is equal to the last date stored, in case it is it returns true, in case the database has no operations it returns Empty and in case the date is not equal it returns the last date stored, if there is an error it returns False. All of this is returned in an object with a "lastDate" attribute
     def checkDates(self, date):
-        print(date)
         try:
             lastElementFound = list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 1}]))
         except Exception:
@@ -458,5 +442,3 @@ class MongoDb:
             return {"lastDate": True}
         else:
             return {"lastDate": lastElementFound["Date"]}
-    def getLast7Operations(self):
-        return list(self.dbname["Operations"].aggregate([{"$sort": {"Date": -1}}, {"$limit": 7}]))

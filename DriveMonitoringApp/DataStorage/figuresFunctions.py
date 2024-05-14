@@ -1,7 +1,6 @@
 from datetime import datetime
 import matplotlib as mpl
 mpl.use('Agg')
-
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib import gridspec
@@ -19,6 +18,7 @@ from plotly.subplots import make_subplots
 from django.contrib.staticfiles import finders
 import os
 
+#This function generates the first and seccond plots. The first plot is the LOAD (fig variable) one and the seccond one is the Torque plot (fig2 variable). Here is all personalization of the plots and the treatment of the data. Once each plot is generated it saves them into the given path as an HTML file
 def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
     fig = go.Figure()
     generatedCableLegend = False
@@ -29,7 +29,6 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             mask107 = dfloadpin[i]['LoadPin']==107
             mask207 = dfloadpin[i]['LoadPin']==207
             loadPinSorted = dfloadpin[i].sort_values(by=["T"])
-    
             if generatedCableLegend == False:
                 fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", mode="lines"))
                 fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", mode="lines"))
@@ -37,11 +36,8 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             else:
                 fig.add_trace(go.Scatter(x=loadPinSorted[mask107]["T"], y=loadPinSorted[mask107]["Load"], line= dict(color="blue"), name="Cable 107", legendgroup="Cable 107", showlegend=False, mode="lines"))
                 fig.add_trace(go.Scatter(x=loadPinSorted[mask207]["T"], y=loadPinSorted[mask207]["Load"], line= dict(color="green"), name="Cable 207", legendgroup="Cable 207", showlegend=False, mode="lines"))
-
-
         if dfpos[i] is not None and dfpos[i].empty != True:
             dfposSorted = dfpos[i].sort_values(by=["T"])
-
             if generatedPositionLegend == False:
                 fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth", mode="lines"))
                 fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle", mode="lines"))
@@ -49,11 +45,9 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             else:
                 fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["Az"], line= dict(color="red"), yaxis="y2", name="Azimuth", legendgroup="Azimuth", showlegend=False, mode="lines"))
                 fig.add_trace(go.Scatter(x=dfposSorted["T"], y=dfposSorted["ZA"], line= dict(color="black"), yaxis="y3", name="Zenith Angle", legendgroup="Zenith Angle", showlegend=False, mode="lines"))
-
         dftrackSorted = None
         if dftrack[i] is not None and dftrack[i].empty != True:
             dftrackSorted = dftrack[i].sort_values(by=["T"])
-
             if generatedPositionTTHLegend == False:
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", mode="lines"))
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", mode="lines"))
@@ -61,9 +55,7 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             else:
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["Azth"], line= dict(color="red", dash="dash"), yaxis="y2", name="Azimuth Th.", legendgroup="Azimuth Th.", showlegend=False, mode="lines"))
                 fig.add_trace(go.Scatter(x=dftrackSorted["Tth"], y=dftrackSorted["ZAth"], line= dict(color="black", dash="dash"), yaxis="y3", name="Zenith Angle Th.", legendgroup="Zenith Angle Th.", showlegend=False, mode="lines"))
-            
     fig.update_layout(
-        #title="My plot title",
         xaxis_tickformat = "%H:%M:%S",
         yaxis= dict(
             #dtick=50,
@@ -103,7 +95,6 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             overlaying="y",
             side="right",
             autoshift=True,
-            #title_something to space the title from the ticks
             shift=30
 
         ),
@@ -116,17 +107,13 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
         ),
     )
     fig.update_yaxes(tickangle=7.5)
-    #figImg = go.Figure(fig)
-    print(path)
     fig.write_html(path)
-    #pio.write_image(figImg, path.replace(".html", ".png").replace("html", "img"), width=1080, height=720)
     fig2 = go.Figure()
     generatedTorqueLegend = False
     if dftorque is not None:
         for i in range(0, len(dftorque)):
             if dftorque[i].empty != True:
                 torqueSorted = dftorque[i].sort_values(by=["T"])
-                #print(torqueSorted)
                 if generatedTorqueLegend == False:
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=list({0: torqueSorted["T"][0]}), line= dict(color="rgba(0,0,0,0)"), name=addText)) #This is for the legend title
                     fig2.add_trace(go.Scatter(x=torqueSorted["T"], y=torqueSorted['El1_mean'], line= dict(color="chocolate"), name="El S", legendgroup="El S", mode="lines"))
@@ -153,7 +140,6 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
             else:
                 print("There is no data")
     fig2.update_layout(
-        #title="My second interactive plot",
         xaxis_tickformat = "%H:%M:%S",
         xaxis= dict(
             title="Time",
@@ -178,11 +164,8 @@ def FigureTrack(addText, dfpos,dfloadpin,dftrack,dftorque, path):
         ),
     )
     fig2.update_yaxes(tickangle=7.5)
-    #figImg2 = go.Figure(fig2)
-    fig2.write_html(path.replace(".html", "-torque.html"))
-    #pio.write_image(figImg2, path.replace(".html", "-torque.png").replace("html", "img"), width=1080, height=720)
-    
-#Used in GenerateFig
+    fig2.write_html(path.replace(".html", "-torque.html"))  
+#This function generates the third plot, it is just present some times. Here is all personalization of the plot and the treatment of the data. Once the plot is generated it is saved into the given path as an HTML file
 def FigAccuracyTime(dfacc, path):
     #addhtmlfile(fichierhtml,figname2)
     fig = go.Figure()
@@ -229,7 +212,7 @@ def FigAccuracyTime(dfacc, path):
         fig.add_trace(go.Scatter(x=dfMin[mask1]["times"], y=dfMin[mask1]["values"], line= dict(color="palegreen"), name="1' req", legendgroup="1' req", fill="tonexty", fillcolor="palegreen", showlegend=False, mode="lines"))
         fig.add_trace(go.Scatter(x=dfSec[mask0Sec]["times"], y=dfSec[mask0Sec]["values"], line= dict(color="limegreen"), name="14'' req", legendgroup="14' req", fill="tozeroy", fillcolor="limegreen", mode="lines"))
         fig.add_trace(go.Scatter(x=dfSec[mask1Sec]["times"], y=dfSec[mask1Sec]["values"], line= dict(color="limegreen"), name="14'' req", legendgroup="14' req", fill="tozeroy", fillcolor="limegreen", showlegend=False, mode="lines"))
-        fig.add_trace(go.Scatter(x=dfSec[mask1Sec]["times"], y=[0 for x in dfSec[mask1Sec]["times"]], line= dict(color="black", dash="dash", width=0.5), name="0 req", legendgroup="0 req", mode="lines",)) #It kinda make the plot harder to read, maybe with opacity=0.25 would better
+        fig.add_trace(go.Scatter(x=dfSec[mask1Sec]["times"], y=[0 for x in dfSec[mask1Sec]["times"]], line= dict(color="black", dash="dash", width=0.5), name="0 req", legendgroup="0 req", mode="lines",))
         for i in range(0, len(dfacc)):
             if i == 0:
                 fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Azmin"], line= dict(color=("rgba(0,0,0,0)")), name="Azimuth", legendgroup="Azimuth", showlegend=False, mode="lines"))
@@ -241,9 +224,7 @@ def FigAccuracyTime(dfacc, path):
                 fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Azmax"], line= dict(color=("rgba(0,0,0,0)")), name="Azimuth", legendgroup="Azimuth", fill="tonexty", fillcolor="rgba(0,0,255,0.5)", showlegend=False, mode="lines"))
                 fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Zdmin"], line= dict(color=("rgba(0,0,0,0)")), name="Zenith angle", legendgroup="Zenith angle", showlegend=False, mode="lines"))
                 fig.add_trace(go.Scatter(x=dfacc[i]["T"], y=dfacc[i]["Zdmax"], line= dict(color=("rgba(0,0,0,0)")), name="Zenith angle", legendgroup="Zenith angle", fill="tonexty", fillcolor="rgba(255,0,0,0.5)", showlegend=False, mode="lines"))
-
         fig.update_layout(
-            #title="My plot title",
             xaxis_tickformat = "%H:%M:%S",
             yaxis= dict(
                 range=[-100, 100],
@@ -267,7 +248,7 @@ def FigAccuracyTime(dfacc, path):
         )
         fig.update_yaxes(tickangle=7.5)
         fig.write_html(path.replace(".html", "_Diff.html"))
-
+#This generates the final section of the plots, right now is not being used
 def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):  
     fig1 = make_subplots(specs=[[{"secondary_y": True}]])
     fig2 = make_subplots(specs=[[{"secondary_y": True}]])
@@ -278,31 +259,22 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
         dfpos[i]['AzSky'] = dfpos[i]['Az']+dfbm[i]['AzC']
         dfpos[i]['ZASky'] = dfpos[i]['ZA']+dfbm[i]['ZAC']
         dfpos[i]['AltSky'] = 90.- dfpos[i]['ZASky']
-        #print(dftrack)
-        #print(dfbm)
-        
         tracksky = None
         if dftrack is not None:
             tracksky = pd.merge(dftrack[i], dfbm[i], on="T",how='inner')
             tracksky['AzSky'] = tracksky['Azth']+tracksky['AzC']
             tracksky['ZASky'] = tracksky['ZAth']+tracksky['ZAC']
             tracksky['AltSky'] = 90.- tracksky['ZASky']
-
         lst=EarthLocation.from_geodetic(-17.8915 * u.deg, 28.7615 * u.deg, 2202* u.m)
-        #print(dfpos)
         direc_lst = AltAz(location=lst, obstime=dfpos[i]['T'],az=dfpos[i]['AzSky'] * u.deg, alt=dfpos[i]['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
         sky_lst = SkyCoord(direc_lst.transform_to(ICRS()))
         target = SkyCoord(ra=ra[i]*u.deg,dec=dec[i]*u.deg, frame='icrs')
         distsky = target.separation(sky_lst)
-
         if tracksky is not None:
             direc_lst_track = AltAz(location=lst, obstime=tracksky['Tth'],az=tracksky['AzSky'] * u.deg, alt=tracksky['AltSky'] * u.deg,obswl=0.35*u.micron,relative_humidity=0.5,temperature=10*u.deg_C,pressure=790*u.hPa)
             sky_lst_track = SkyCoord(direc_lst_track.transform_to(ICRS()))
             target_track = SkyCoord(ra=ra[i]*u.deg,dec=dec[i]*u.deg, frame='icrs')
             distsky_track = target.separation(sky_lst_track)
-
-        #addhtmlfile(fichierhtml,figname3)
-
         #Here it starts to generate the Plot
         if tracksky is not None:
             fig1.add_trace(go.Histogram(x=sky_lst_track.ra.deg, name="Drive Target", legendgroup="Drive Target", marker= dict(color="blue"), xbins=dict(size= 0.0000005)), secondary_y=True)   
@@ -329,7 +301,7 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
         time = date[0].split("+")
         fig2.show() """
         #fig2.write_html(path.replace(".html", "_"+time[0]+"_"+"_SkyCoord2.html"))
-
+#This function generates the LoadPin plots, it takes all the load pin data from a whole day and represents all the tension of each cable on it. This is divided on two plots the 10X cables (fig variable) and the 20X cables (fig2 variable). Once the plots are generated and personlized they are saved as HTLM files into the given path
 def FigureLoadPin(dfloadpin, path, date):
     pathParts = path.split("/")
     newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"

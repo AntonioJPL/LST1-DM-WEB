@@ -20,6 +20,7 @@ from DataStorage import views as Sv
 from django.conf import settings
 from django.conf.urls.static import static
 
+#Here are the accesible urls, the format is ("PATH", FUNCTION CALLED, NAME), The static part on the end is just to work with static files and allow the urls to acces the static content
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('driveMonitoring', Sv.driveMonitoring, name="driveMonitoring"),

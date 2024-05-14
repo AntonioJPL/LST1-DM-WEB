@@ -26,9 +26,7 @@ SECRET_KEY = 'django-insecure-+^*+31hhdwrm3bg(5r(lw8k^%3(*y_w5@o7nwrz=$ytsz*sjv6
 DEBUG = True
 ALLOWED_HOSTS = ["localhost","127.0.0.1"]
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -70,9 +68,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'DriveMonitoringApp.wsgi.application'
 
 
-# Database
+# Database. This is not used since we work with MongoDB
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -81,7 +78,7 @@ DATABASES = {
 }
 
 
-# Password validation
+# Password validation. Not used since we have no user auth
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -120,7 +117,7 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "DataStorage/static"
 
 
-# Default primary key field type
+# Default primary key field type. Not used
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

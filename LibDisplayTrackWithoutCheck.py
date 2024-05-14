@@ -1,9 +1,7 @@
 import numpy as np
 from numpy import fft
-
 import matplotlib as mpl
 mpl.use('Agg')
-
 import matplotlib.pyplot as plt
 import math
 from math import log
@@ -17,21 +15,14 @@ import pytz
 import matplotlib.dates as mdates
 from matplotlib import gridspec
 from operator import itemgetter
-
 import astropy.units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, solar_system_ephemeris,ICRS
-
-
 import pandas as pd
 import numpy as np
-
 import requests
 import asyncio
-
 from DriveMonitoringApp.mongo_utils import MongoDb
-
-
 #General
 operationTimes = []
 generallog = []
@@ -42,9 +33,7 @@ generalTypes = {
     "3" : "Park-in",
     "4" : "GoToPos"
 }
-
 selectedType = 0
-
 #Used on GetAllDate function, normally recieves the filename variable and a string containing the text we are searching. Returns xbeg value
 def getDate(filename,cmdstring):
     f = open(filename, "r") 
@@ -64,7 +53,6 @@ def getDate(filename,cmdstring):
             xbeg.append(begtimes)
             generallog.append([begtime,cmdstring])
     return xbeg
-
 #Used in getAllDate function, recieves the filename and a string containing the text we are searching. Returns 3 values: ra, dec and radetime
 def getRADec(filename,cmdstring):
     f = open(filename, "r") 
@@ -88,7 +76,6 @@ def getRADec(filename,cmdstring):
                 if vali.find("Dec=") != -1:
                     dec.append(float(vali[(vali.find('=')+1):(vali.find('['))]))
     return ra,dec,radectime
-
 #Used in getAllDate function, recieves the filename and a string containing the text we are searching. Returns xbeg value val is teh array of strings in the found line. It works as getDate but the string structure is different so it needs to be treated in other way
 def getDateTrack(filename,cmdstring):
     f = open(filename, "r") 
@@ -106,70 +93,56 @@ def getDateTrack(filename,cmdstring):
             begtimes = begtime.timestamp()
             xbeg.append(begtimes)
     return xbeg
-
-
 #Used in GenerateFig function. Returns df value which is a pandas.DataFrame Object containing the date, ra, dec between the given tmin and tmax values in the DrivePosition file 
 def getPos(filename,tmin,tmax):    
-    
     try:
         filenameBM = filename.replace('DrivePosition','BendingModelCorrection')
     except:
         print('%s not existing'%(filename))
         return None
-    
     df = pd.read_csv(filename,sep=' ',header=None)
     df.columns=['T','Az','ZA']
     masktmin = df['T']>tmin
     masktmax = df['T']<tmax
     maskT = np.logical_and(masktmin,masktmax)
     df = df[maskT] #This is weird because maskT value should be true or false
-
     maskT1 = df['T']<1605657600 #2020/11/18 00:00:00
     maskt2 = df['T']>1611057600 #2021/01/19 12:00:00
     maskt3 = df['T']<1615161600 #2021/03/08 00:00:00
     maskT2 = np.logical_and(maskt2,maskt3)
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2 
-    
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    
     for rows in df.to_dict('records'):
         rows["T"] = str(rows["T"].timestamp()).replace(".", "")
         rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
         MongoDb.storePosition(MongoDb, rows)
-
 #Used in GenerateFig.  
 def getBM(filename,tmin,tmax):    
-    
     dfBM = pd.read_csv(filename,sep=' ',header=None)
     dfBM.columns=['T','AzC','ZAC']
     masktmin = dfBM['T']>tmin
     masktmax = dfBM['T']<tmax
     maskT = np.logical_and(masktmin,masktmax)
     dfBM = dfBM[maskT]
-
     maskT1 = dfBM['T']<1605657600
     maskt2 = dfBM['T']>1611057600
     maskt3 = dfBM['T']<1615161600
     maskT2 = np.logical_and(maskt2,maskt3)
     dfBM['T'] = dfBM['T'] + maskT1*-2 + maskT2*-2
     for rows in dfBM.to_dict('records'):
-        MongoDb.storeBendModel(MongoDb, rows)
-               
+        MongoDb.storeBendModel(MongoDb, rows)      
 def getPrecision(filename,tmin,tmax):    
-    
     df = pd.read_csv(filename,sep=' ',header=None)
     df.columns = ['T','Azmean','Azmin','Azmax','Zdmean','Zdmin','Zdmax']
     masktmin = df['T']>tmin
     masktmax = df['T']<tmax
     maskT = np.logical_and(masktmin,masktmax)
     df = df[maskT]
-
     maskT1 = df['T']<1605657600
     maskt2 = df['T']>1611057600
     maskt3 = df['T']<1615161600
     maskT2 = np.logical_and(maskt2,maskt3)
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2
-    
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
     df['Azmean'] = df['Azmean'] * 3600
     df['Azmin'] = df['Azmin'] * 3600
@@ -177,7 +150,6 @@ def getPrecision(filename,tmin,tmax):
     df['Zdmean'] = df['Zdmean'] * 3600
     df['Zdmin'] = df['Zdmin'] * 3600
     df['Zdmax'] = df['Zdmax'] * 3600
-
     mask0_1 = df['Azmean']!=0.
     mask0_2 = df['Zdmean']!=0. #This is why data is being ignored
     mask0 = np.logical_and(mask0_2,mask0_1)
@@ -186,7 +158,6 @@ def getPrecision(filename,tmin,tmax):
         rows["T"] = str(rows["T"].timestamp()).replace(".", "")
         rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
         MongoDb.storeAccuracy(MongoDb, rows)
-
 #Works as getDate but returns date and line of the found cmdstring
 def getDateAndLine(filename,cmdstring):
     f = open(filename, "r") 
@@ -208,7 +179,6 @@ def getDateAndLine(filename,cmdstring):
             lineout.append(line)
             print("Found %s %s %s"%(cmdstring,begtime,begtimes))
     return xbeg,lineout
-
 def getTorqueNew(filename,tmin,tmax):    
     df = pd.read_csv(filename,sep=' ',header=None)
     df.columns=['T','Az1_mean','Az1_min','Az1_max','Az2_mean','Az2_min','Az2_max','Az3_mean','Az3_min','Az3_max','Az4_mean','Az4_min','Az4_max','El1_mean','El1_min','El1_max','El2_mean','El2_min','El2_max']
@@ -226,7 +196,6 @@ def getTorqueNew(filename,tmin,tmax):
         rows["T"] = str(rows["T"].timestamp()).replace(".", "")
         rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
         MongoDb.storeTorque(MongoDb, rows)
-    
 ##### READ TRACK VALUES
 def getTrackNew(filename3,tmin,tmax):
     print("getTrack %s %s %s"%(filename3,tmin,tmax))
@@ -247,19 +216,14 @@ def getTrackNew(filename3,tmin,tmax):
         rows["Tth"] = str(rows["Tth"].timestamp()).replace(".", "")
         rows["Tth"] = int(rows["Tth"].ljust(2+len(rows["Tth"]), '0'))
         MongoDb.storeTrack(MongoDb, rows)
-
-
-
 ##### READ LOAD PIN
 def getLoadPin(filename2):
     print("getLoadPin %s"%(filename2))
     t0=0
     dt=0
-    
     t0=datetime(1970,1,1)
     pst = pytz.timezone('UTC')
     t0 = pst.localize(t0)
-
     f2 = open(filename2, "r") 
     df=pd.DataFrame(columns=['T','LoadPin','Load'])
     lp=0
@@ -274,37 +238,18 @@ def getLoadPin(filename2):
             dvalinc = int(dval) + (v-2)*0.1
             lpval=int(val[v].replace("\n",""))
             MongoDb.storeLoadPin(MongoDb, {'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
-
 #Used in checkDate and checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
-    
     print("GenerateFig %s %s %s %s %s %s %s "%(filename,filename2,filename3,tmin,tmax,ttrack,figname))
-    """   if ra is not None:
-        addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S') + ' RA=%s Dec=%s'%(ra,dec))
-    else:
-        addhtmltitle(fichierhtml,datetime.fromtimestamp(tmin, tz=pytz.utc).strftime('%Y%m%d %H:%M:%S')) """
-
-    
     #Position log.
     getPos(filename,tmin,tmax)
-    
-    
     #Precision log
-
-    
     if ttrack != 0:
         getTrackNew(filename3,tmin,tmax)
         getPrecision(filename.replace("DrivePosition","Accuracy"),tmin,tmax)
- 
-    
     if ra is not None:
         getBM(filename.replace('DrivePosition','BendingModelCorrection'),tmin,tmax)
-
-    
-
-  
     getTorqueNew(filename4,tmin,tmax)
-
     start = datetime.fromtimestamp(tmin).strftime("%Y-%m-%d %H:%M:%S").split(" ")
     end = datetime.fromtimestamp(tmax).strftime("%Y-%m-%d %H:%M:%S").split(" ")
     if len(operationTimes)>0:
@@ -312,7 +257,6 @@ def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttra
         imageSplitEnd = file[-1].split(".")
         finalImage = file[-4]+"/"+file[-3]+"/"+file[-2]+"/"+imageSplitEnd[0]
         MongoDb.storeGeneralData(MongoDb, {"type": type, "Sdate": start[0], "Stime": start[1], "Edate": end[0], "Etime": end[1], "RA": ra, "DEC": dec, "file": finalImage, "addText": addtext})
-   
 #Used in checkDateV2 Gets the regulation parameters for Elevation and Azimuth from the cmd
 def getRegulParameters(param,paramline,begtrack):
     paramout=""
@@ -321,19 +265,14 @@ def getRegulParameters(param,paramline,begtrack):
             for j in range(7,len(paramline[i].split(" "))):
                 paramout+=str(paramline[i].split(" ")[j])
                 paramout+=" "
-            break
-             
+            break            
     print("paramout %s"%(paramout))
     return paramout
-
-         
 #Used in GetAllDate function
 def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,filename4,figname,type,zoom=0,action="",lastone=0,azparam=None,azparamline=None,elparam=None,elparamline=None,ra=None,dec=None):
-
     beg_ok=[]
     end_ok=[]
     cmd_status=[]
-    
     # Loop over beginning
     for k in range(len(beg)):
         endarray=[9999999999,9999999999,9999999999]
@@ -355,7 +294,6 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
         beg_ok.append(beg[k])
         end_ok.append(min(endarray))
         cmd_status.append(endarray.index(min(endarray)))
-
     figpre = figname
     trackok=[]
     trackok.clear()
@@ -363,7 +301,6 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
     raok.clear()
     decok=[]
     decok.clear()
-
     for i in range(len(beg_ok)):
         trackok.append(0)
         raok.append(0)
@@ -385,7 +322,6 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
         addtext += "El " + getRegulParameters(elparam,elparamline,beg_ok[-1])
     raok2 = None
     decok2 = None
-    
     if lastone == 0:
         for i in range(len(end_ok)):
             begname = datetime.fromtimestamp(beg_ok[i], tz=pytz.utc)
@@ -432,8 +368,7 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
                 tmin = tmax-200
                 tmax = tmax
             GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status[-1],trackok2,figname.replace(" ",""),type,addtext,raok2,decok2)
-
-#Creates the LOGS section at the end of the HTML  FUNCTION THAT STORES LOG
+#Stores the logs and the opreation into mongodb
 def storeLogsAndOperation(logsorted):
     logs = []
     data = {}
@@ -465,7 +400,6 @@ def storeLogsAndOperation(logsorted):
             commandPosition = i
         else:
             data["LogStatus"] = None
-
         if len(logsorted[i][1].split(" ")) <= 2:
             data["Command"] = logsorted[i][1]
             data["Status"] = None
@@ -473,7 +407,6 @@ def storeLogsAndOperation(logsorted):
             logParts = logsorted[i][1].split(" ")
             data["Command"] = logParts[0]
             data["Status"] = logParts[1]+" "+logParts[2]
-
         data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
         data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
         if operationTmin == None and commandPosition != None:
@@ -486,23 +419,18 @@ def storeLogsAndOperation(logsorted):
     MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
     operationTimes.append(operationTmin)
     operationTimes.append(operationTmax)
-
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
-    
     dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
     generallog.clear()
     firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
-
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
     trackcmdinitiale = getDate(filename,"Start Tracking")
     gotocmdinitiale = getDate(filename,"GoToPosition") 
-
     #Param regulation
     azparam,azparamline = getDateAndLine(filename,"Drive Regulation Parameters Azimuth")    #This prints the found msg in console
     elparam,elparamline = getDateAndLine(filename,"Drive Regulation Parameters Elevation")  #This prints the found msg in console
-     
     #Tracking
     trackcmd = getDate(filename,"Start_Tracking command sent")
     trackbeg = getDate(filename,"Start_Tracking in progress")
@@ -510,46 +438,37 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     trackerror = getDate(filename,"Start_Tracking action error")
     track = getDateTrack(filename,"[Drive] Track start")
     ra,dec,radectime = getRADec(filename,"Start Tracking")
-
     #Parkout
     parkoutcmd = getDate(filename,"Park_Out command sent")
     parkoutbeg = getDate(filename,"Park_Out in progress")
     parkoutend = getDate(filename,"Park_Out Done received")
     parkouterror = getDate(filename,"Park_Out action error")
-    
     #Parkin
     parkincmd = getDate(filename,"Park_In command sent")
     parkinbeg = getDate(filename,"Park_In in progress")
     parkinend = getDate(filename,"Park_In Done received")
     parkinerror = getDate(filename,"Park_In action error")
-    
     #GoToTelPos
     gotocmd = getDate(filename,"GoToTelescopePosition command sent")
     gotobeg = getDate(filename,"GoToTelescopePosition in progress")
     gotoend = getDate(filename,"GoToTelescopePosition Done received")
     gotoerror = getDate(filename,"GoToTelescopePosition action error")
-
-
     generallogsorted =sorted(generallog, key=itemgetter(0)) #Orders generallog by date as position 0 contains begdate value
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     storeLogsAndOperation(generallogsorted)
-
     if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
         dirParts = dirname.split("/")
         if path.exists(dirname.replace("/"+dirParts[-1], "")) == False:
             os.mkdir(dirname.replace("/"+dirParts[-1], ""))
         if path.exists(dirname)==False :
             os.mkdir(dirname)
-             
-
     if len(trackbeg) != 0:
         if path.exists(dirname+"/Track")==False :
                 os.mkdir(dirname+"/Track")
         print("====== Track =======")
         selectedType = "1"
         checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
-
     if lastone ==0 :
         if len(parkoutbeg) != 0:
             if path.exists(dirname+"/Parkout")==False :
@@ -557,32 +476,26 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
             print("====== Parkout =======")
             selectedType = "2"
             checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
-
         if len(parkinbeg) != 0:
             if path.exists(dirname+"/Parkin")==False :
                     os.mkdir(dirname+"/Parkin")
             print("====== Parkin =======")
             selectedType = "3"
             checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
-
         if len(gotobeg) != 0:
             if path.exists(dirname+"/GoToPos")==False :
                     os.mkdir(dirname+"/GoToPos")
             print("====== GoToPos =======")
             selectedType = "4"
             checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
-    
-         
     getLoadPin(filename3)
     try: 
         if firstData is not None:
             req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-            print(req.json()["Message"])
     except Exception:
         print("Plot was not generated because there is no conection to Django or there was a problem.")
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
-    
 #Function to run the previous days script
 async def runFile(date):
     runfile = "sh DisplayTrack-NoCheck.sh %s" % (date)

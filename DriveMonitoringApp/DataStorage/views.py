@@ -24,8 +24,6 @@ from django.contrib.staticfiles import finders
 import os
 
 database = MongoDb
-
-
 #Function that returns the data and render the DriveMonitoring view or throws an Json response with an error message
 def driveMonitoring(request):
     if database.isData(database) == True:
@@ -57,7 +55,7 @@ def loadPins(request):
         return JsonResponse({"Message": "There is no data to show"})
 
 @csrf_exempt
-#Function that returns the Logs from the database in case there are.
+#Function that returns the Logs from the database in case there are. This accepts GET and POST requests, in the GET requests it gets the latest data stored and in the POST one it returns a specific date data
 def getLogs(request):
     if request.method == "GET":
         if database.isData(database) == True:
@@ -74,7 +72,7 @@ def getLogs(request):
             else:
                 return JsonResponse({"Message": "There is no data to show"})
 @csrf_exempt
-#Function that returns the data from the database in case there is.
+#Function that returns the data from the database in case there is. This accepts GET and POST requests, in the GET requests it gets the latest data stored and in the POST one it returns a specific date data
 def getData(request, date = None):
     if request.method == "GET":
         if database.isData(database) == True:
@@ -94,8 +92,7 @@ def getData(request, date = None):
                 return JsonResponse(data)
             else:
                 return JsonResponse({"Message": "There is no data to show"})
-        
-#Function that generates all the plots. TESTING FUNCTION
+#Function that generates all the plots. This function takes quite long time, probably could be optimized
 def generatePlots(date):
         print("Date recieved")
         print(date)
@@ -111,23 +108,14 @@ def generatePlots(date):
         generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"], generalGotopos["addText"], generalGotopos["RA"], generalGotopos["DEC"] = ([] for i in range(10))
         types = database.getOperationTypes(database)
         foundType = None
-
-        
         for element in data:
             for type in types:
                 if str(type["_id"]) == element["type"]:
                     foundType =  type["name"]
-            
             stringTime = element["Sdate"]+" "+element["Stime"]
             tmin = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
             stringTime = element["Edate"]+" "+element["Etime"]
             tmax = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
-            #operation = database.getOperationTime(database)
-            #print("Esta es la operacion")
-            #print(operation)
-            #tmin = operation[0]["Tmin"]
-            #tmax = operation[0]["Tmax"] 
-            #cmd_status = 0
             print("Getting data from mongo")
             position = database.getPosition(database, tmin, tmax)
             loadPin = database.getLoadPin(database, tmin, tmax)
@@ -206,20 +194,16 @@ def generatePlots(date):
         figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
         figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
         if len(generalTrack["dfacc"]) != 0:
-            #print()
             figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
         if len(generalParkin["dfacc"]) != 0:
-            #print()
             figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
         if len(generalParkout["dfacc"]) != 0:
-            #print()
             figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
         if len(generalGotopos["dfacc"]) != 0:
-            #print()
             figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
         path = generalTrack["name"]
-            #print(path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath))
         figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), path, date)
+        #This section is to create the final plots on the track area but is not implemented
         """ if len(generalTrack["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalTrack["dfpos"], generalTrack["dfbm"], generalTrack["RA"], generalTrack["DEC"], generalTrack["dfacc"], generalTrack["dftrack"], generalTrack["name"])
         if len(generalParkin["dfbm"]) != 0:
@@ -229,20 +213,15 @@ def generatePlots(date):
         if len(generalGotopos["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalGotopos["dfpos"], generalGotopos["dfbm"], generalGotopos["RA"], generalGotopos["DEC"], generalGotopos["dfacc"], generalGotopos["dftrack"], generalGotopos["name"])
          """
-
-
-
+#TEST FUNC
 def showTestView(request):
     if request.method == "GET":
         generatePlots("2024-02-04")
         generatePlots("2024-02-05")
-        #database.getCommandStatusIndexes(database)
-        #figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, "2024-02-03"), "html/Log_cmd.2024-02-03/LoadPin/LoadPin_20240203.html")
-        #pins = database.getAllLoadPin(database, "2024-02-03")
-        #print(pins)
         return render(request, "storage/testPLot.html")
     
 @csrf_exempt
+#This function is the one called by the url it just parses the date recieved on the request and calls the generatePlots method
 def generateDatePlots(request):
     if request.method == "POST":
         userdict = json.loads(str(request.body,encoding='utf-8'))
@@ -253,11 +232,11 @@ def generateDatePlots(request):
     
 
 @csrf_exempt
+#This function returns the Load Pins Plot urls generated by mongodb, it accepts POST and GET requests, in get requests it returns the latest plots and in POST ones it returns the plots of the given date
 def getLoadPins(request):
     if request.method == "GET":
         date = database.getLatestDate(database)
         return JsonResponse(database.getLPPlots(database, date))
-
     if request.method == "POST":
         userdict = json.loads(str(request.body,encoding='utf-8'))
         return JsonResponse(database.getLPPlots(database, userdict["date"]))

@@ -229,6 +229,7 @@ def getLoadPin(filename2):
     lp=0
     lpval=0
     values = 0
+    pins = []
     for line in f2.readlines():
         val=line.split(' ')
         dval = int(val[0])
@@ -237,7 +238,9 @@ def getLoadPin(filename2):
             values += 1
             dvalinc = int(dval) + (v-2)*0.1
             lpval=int(val[v].replace("\n",""))
-            MongoDb.storeLoadPin(MongoDb, {'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
+            pins.append({'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
+    print("Storing the data")
+    MongoDb.storeLoadPin(MongoDb, pins)
 #Used in checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
     print("GenerateFig %s %s %s %s %s %s %s "%(filename,filename2,filename3,tmin,tmax,ttrack,figname))
@@ -383,7 +386,7 @@ def storeLogsAndOperation(logsorted):
         if logsorted[i][1].find("StopDrive")!= -1  and commandPosition != None :
                 logs[commandPosition]["LogStatus"] = "Stopped"
                 commandPosition = None
-        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1:    
+        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1 or logsorted[i+1][1].find("Drive") != -1:    
             if logsorted[i][1].find("Park_Out Done")!= -1 and commandPosition != None :
                 logs[commandPosition]["LogStatus"] = "Finished"
                 commandPosition = None
@@ -397,7 +400,11 @@ def storeLogsAndOperation(logsorted):
                 logs[commandPosition]["LogStatus"] = "Finished"
                 commandPosition = None
         if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1:
-            commandPosition = i
+            if commandPosition != None:
+                logs[commandPosition]["LogStatus"] = "Unknown"
+                commandPosition = i
+            else:
+                commandPosition = i
         else:
             data["LogStatus"] = None
         if len(logsorted[i][1].split(" ")) <= 2:
@@ -416,20 +423,27 @@ def storeLogsAndOperation(logsorted):
     for element in logs:
         if element["Command"] != "Drive":
             MongoDb.storeLogs(MongoDb, element)
-    MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
-    operationTimes.append(operationTmin)
-    operationTimes.append(operationTmax)
+    if operationTmin != None and operationTmax != None and operationDate != None:
+        MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
+        operationTimes.append(operationTmin)
+        operationTimes.append(operationTmax)
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
+    print(dirname)
     if len(MongoDb.dbname.list_collection_names()) == 0:
         MongoDb.__init__(MongoDb)
     generallog.clear()
     #This is the automatized check on the plots being generated a week before the executed date
     dirCopy = dirname
     checkPlots(dirCopy, filename)
-    firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
+    firstData = getDate(filename, "Drive")
     lastDate = None
+    actualDate = getDateAndLine(filename, "Drive")
+    actualDate = actualDate[1][0].split(" ")
+    actualDate = actualDate[0]
+    actualDate = actualDate.split("/")
+    actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
     try:
         date = datetime.fromtimestamp(firstData[0])
         req = MongoDb.checkDates(MongoDb, date.strftime("%Y-%m-%d"))
@@ -437,15 +451,10 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     except Exception as e: 
         print("Could not check if data is up to date. Storing actual date... %s", repr(e))
         lastDate = None
-    if lastDate is not True and lastDate is not None and lastDate is not False:
+    if lastDate is not True and lastDate is not None and lastDate is not False and lastDate.replace("-", "/") < actualDate:
         print("---------- The System is not up to date. Last data date on MongoDB: "+lastDate+" -----------")
         print("Running missing days ...")
         dateFormat = ("%Y/%m/%d")
-        actualDate = getDateAndLine(filename, "Drive Regulation Parameters Azimuth")
-        actualDate = actualDate[1][0].split(" ")
-        actualDate = actualDate[0]
-        actualDate = actualDate.split("/")
-        actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
         if lastDate == "Empty":
             lastDate = actualDate[0:-1]+"1"
             parsedLastDBDate = datetime.strptime(lastDate, dateFormat)-timedelta(days=1)
@@ -493,37 +502,41 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     storeLogsAndOperation(generallogsorted)
-    if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
-        dirParts = dirname.split("/")
-        if path.exists(dirname.replace("/"+dirParts[-1], "")) == False:
-            os.mkdir(dirname.replace("/"+dirParts[-1], ""))
-        if path.exists(dirname)==False :
-            os.mkdir(dirname)
-    if len(trackbeg) != 0:
-        if path.exists(dirname+"/Track")==False :
-                os.mkdir(dirname+"/Track")
-        print("====== Track =======")
-        selectedType = "1"
-        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
-    if lastone ==0 :
-        if len(parkoutbeg) != 0:
-            if path.exists(dirname+"/Parkout")==False :
-                    os.mkdir(dirname+"/Parkout")
-            print("====== Parkout =======")
-            selectedType = "2"
-            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
-        if len(parkinbeg) != 0:
-            if path.exists(dirname+"/Parkin")==False :
-                    os.mkdir(dirname+"/Parkin")
-            print("====== Parkin =======")
-            selectedType = "3"
-            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
-        if len(gotobeg) != 0:
-            if path.exists(dirname+"/GoToPos")==False :
-                    os.mkdir(dirname+"/GoToPos")
-            print("====== GoToPos =======")
-            selectedType = "4"
-            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+    print(len(operationTimes))
+    if len(operationTimes) > 0:
+        if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+            dirParts = dirname.split("/")
+            if path.exists(dirname.replace("/"+dirParts[-1], "")) == False:
+                os.mkdir(dirname.replace("/"+dirParts[-1], ""))
+            if path.exists(dirname)==False :
+                os.mkdir(dirname)
+        if len(trackbeg) != 0:
+            if path.exists(dirname+"/Track")==False :
+                    os.mkdir(dirname+"/Track")
+            print("====== Track =======")
+            selectedType = "1"
+            checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+        if lastone ==0 :
+            if len(parkoutbeg) != 0:
+                if path.exists(dirname+"/Parkout")==False :
+                        os.mkdir(dirname+"/Parkout")
+                print("====== Parkout =======")
+                selectedType = "2"
+                checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
+            if len(parkinbeg) != 0:
+                if path.exists(dirname+"/Parkin")==False :
+                        os.mkdir(dirname+"/Parkin")
+                print("====== Parkin =======")
+                selectedType = "3"
+                checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
+            if len(gotobeg) != 0:
+                if path.exists(dirname+"/GoToPos")==False :
+                        os.mkdir(dirname+"/GoToPos")
+                print("====== GoToPos =======")
+                selectedType = "4"
+                checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+    else:
+        print("There is no general data or there was an error")
     getLoadPin(filename3)
     try: 
         if firstData is not None:

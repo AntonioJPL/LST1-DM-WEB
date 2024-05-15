@@ -304,12 +304,28 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
 #This function generates the LoadPin plots, it takes all the load pin data from a whole day and represents all the tension of each cable on it. This is divided on two plots the 10X cables (fig variable) and the 20X cables (fig2 variable). Once the plots are generated and personlized they are saved as HTLM files into the given path
 def FigureLoadPin(dfloadpin, path, date):
     pathParts = path.split("/")
-    newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
-    file = finders.find(newPath)
-    if file is None:
-        file = path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath)
-        os.mkdir(file)
+    newPath = None
+    print(len(pathParts))
+    if len(pathParts) <= 2:
+        #newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
+        print(path)
+        newPath = "static/"+path+"/LoadPin"
+        file = finders.find(newPath)
+        if file is None:
+            file = os.path.abspath("/DriveMonitoringApp/DataStorage/static/"+path)
+            print(file)
+            os.makedirs(file)
+    else:
+        newPath = pathParts[-4]+"/"+pathParts[-3]+"/LoadPin"
+        print(newPath)
+        file = finders.find(newPath)
+        print(file)
+        if file is None:
+            file = path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath)
+            print(file)
+            os.mkdir(file)
     path = file+"/"+"LoadPin_"+date+".html"
+    print(path)
     fig = go.Figure()
     fig2 = go.Figure()
     dfloadpin = pd.DataFrame.from_dict(dfloadpin)

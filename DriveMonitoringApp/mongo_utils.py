@@ -162,7 +162,7 @@ class MongoDb:
         if len(self.dbname["Load_Pin"].index_information()) == 1:
             self.dbname["Load_Pin"].create_index([('T', pymongo.ASCENDING), ("LoadPin", pymongo.ASCENDING), ("Load", pymongo.ASCENDING)], unique=True)
         try: 
-            self.dbname["Load_Pin"].insert_one(data)
+            self.dbname["Load_Pin"].insert_many(data)
         except Exception:
             pass
     #Function that stores a track entry

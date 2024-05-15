@@ -201,7 +201,6 @@ input.addEventListener("mouseout", ()=>{
     }
 })
 window.addEventListener("click", (e)=>{
-    console.log(e.target)
     if(isPickerOpen && e.target != input){
         isPickerOpen = false
     }
@@ -382,6 +381,9 @@ const fillSummary = ()=>{
                 summaryParsedData.push(element.Time+" -> "+element.Command+" was "+element.LogStatus.toLowerCase()+" by user")
             }else if(element.LogStatus == "Error"){
                 summaryParsedData.push(element.Time+" -> "+element.Command+" had an "+element.LogStatus.toLowerCase())
+            }else if(element.LogStatus == "Unknown"){
+                summaryParsedData.push(element.Time+" -> "+element.LogStatus+" status")
+
             }else{
                 summaryParsedData.push(element.Time+" -> "+element.Command+" was "+element.LogStatus.toLowerCase())
             }
@@ -419,6 +421,8 @@ const startSummary = ()=>{
         parragraph.appendChild(document.createTextNode(element))
         if(element.includes("error")){
             parragraph.classList.add("text-red-500")
+        }else if(element.includes("status")){
+            parragraph.classList.add("text-yellow-500")
         }else if(!element.includes("by user")){
             parragraph.classList.add("text-black")
         }else{

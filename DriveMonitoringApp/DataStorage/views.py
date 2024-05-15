@@ -97,112 +97,130 @@ def generatePlots(date):
         print("Date recieved")
         print(date)
         operation = database.getOperation(database,date)
-        data = database.getDatedData(database, operation[0]["Tmin"], operation[0]["Tmax"])
-        generalTrack = {}
-        generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["dfacc"], generalTrack["dfbm"], generalTrack["name"], generalTrack["addText"], generalTrack["RA"], generalTrack["DEC"] = ([] for i in range(10))
-        generalParkin = {}
-        generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["dfacc"], generalParkin["dfbm"], generalParkin["name"], generalParkin["addText"], generalParkin["RA"], generalParkin["DEC"] = ([] for i in range(10))
-        generalParkout = {}
-        generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["dfacc"], generalParkout["dfbm"], generalParkout["name"], generalParkout["addText"], generalParkout["RA"], generalParkout["DEC"] = ([] for i in range(10))
-        generalGotopos = {}
-        generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"], generalGotopos["addText"], generalGotopos["RA"], generalGotopos["DEC"] = ([] for i in range(10))
-        types = database.getOperationTypes(database)
-        foundType = None
-        for element in data:
-            for type in types:
-                if str(type["_id"]) == element["type"]:
-                    foundType =  type["name"]
-            stringTime = element["Sdate"]+" "+element["Stime"]
-            tmin = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
-            stringTime = element["Edate"]+" "+element["Etime"]
-            tmax = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
-            print("Getting data from mongo")
-            position = database.getPosition(database, tmin, tmax)
-            loadPin = database.getLoadPin(database, tmin, tmax)
-            track = database.getTrack(database, tmin, tmax)
-            torque = database.getTorque(database, tmin, tmax)
-            accuracy = database.getAccuracy(database, tmin, tmax)
-            bendModel = database.getBM(database, tmin, tmax)
-            dfpos = pd.DataFrame.from_dict(position)
-            dfloadpin = pd.DataFrame.from_dict(loadPin)
-            dftrack = pd.DataFrame.from_dict(track) 
-            dftorque = pd.DataFrame.from_dict(torque) 
-            dfbm = pd.DataFrame.from_dict(bendModel) 
-            dfacc = pd.DataFrame.from_dict(accuracy)
-            file = element["file"].split("/")
-            file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
-            print("Making sections")
-            if foundType == "Track":
-                generalTrack["dfpos"].append(dfpos)
-                generalTrack["dfloadpin"].append(dfloadpin)
-                generalTrack["dftrack"].append(dftrack)
-                generalTrack["dftorque"].append(dftorque)
-                if dfacc is not None and dfacc.empty != True:
-                    generalTrack["dfacc"].append(dfacc)
-                if dfbm is not None and dfacc.empty != True:
-                    generalTrack["dfbm"].append(dfbm)
-                filename = "Track-"+datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d")+"-"+datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d")
-                generalTrack["name"] = file+"/"+filename+".html"
-                generalTrack["addText"] = element["addText"]
-                generalTrack["RA"].append(element["RA"])
-                generalTrack["DEC"].append(element["DEC"])
-            if foundType == "Park-in":
-                generalParkin["dfpos"].append(dfpos)
-                generalParkin["dfloadpin"].append(dfloadpin)
-                generalParkin["dftrack"].append(dftrack)
-                generalParkin["dftorque"].append(dftorque)
-                if dfacc is not None and dfacc.empty != True:
-                    generalParkin["dfacc"].append(dfacc)
-                if dfbm is not None and dfacc.empty != True:
-                    generalParkin["dfbm"].append(dfbm)
-                filename ="Park-in-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
-                generalParkin["name"] = file+"/"+filename+".html"
-                generalParkin["addText"] = element["addText"]
-                generalParkin["RA"].append(element["RA"])
-                generalParkin["DEC"].append(element["DEC"])
-            if foundType == "Park-out":
-                generalParkout["dfpos"].append(dfpos)
-                generalParkout["dfloadpin"].append(dfloadpin)
-                generalParkout["dftrack"].append(dftrack)
-                generalParkout["dftorque"].append(dftorque)
-                if dfacc is not None and dfacc.empty != True:
-                    generalParkout["dfacc"].append(dfacc)
-                if dfbm is not None and dfbm.empty != True:
-                    generalParkout["dfbm"].append(dfbm)
-                filename = "Park-out-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
-                generalParkout["name"] = file+"/"+filename+".html"
-                generalParkout["addText"] = element["addText"]
-                generalParkout["RA"].append(element["RA"])
-                generalParkout["DEC"].append(element["DEC"])
-            if foundType == "GoToPos":
-                generalGotopos["dfpos"].append(dfpos)
-                generalGotopos["dfloadpin"].append(dfloadpin)
-                generalGotopos["dftrack"].append(dftrack)
-                generalGotopos["dftorque"].append(dftorque)
-                if dfacc is not None and dfacc.empty != True:
-                    generalGotopos["dfacc"].append(dfacc)
-                if dfbm is not None and dfacc.empty != True:
-                    generalGotopos["dfbm"].append(dfbm)
-                filename = "GoToPos-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
-                generalGotopos["name"] = file+"/"+filename+".html"
-                generalGotopos["addText"] = element["addText"]
-                generalGotopos["RA"].append(element["RA"])
-                generalGotopos["DEC"].append(element["DEC"])
-        print("Generating figures")
-        figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
-        figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
-        figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
-        figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
-        if len(generalTrack["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
-        if len(generalParkin["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
-        if len(generalParkout["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
-        if len(generalGotopos["dfacc"]) != 0:
-            figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
-        path = generalTrack["name"]
-        figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), path, date)
+        generalTrack = None
+        try:
+            data = database.getDatedData(database, operation[0]["Tmin"], operation[0]["Tmax"])
+            generalTrack = {}
+            generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["dfacc"], generalTrack["dfbm"], generalTrack["name"], generalTrack["addText"], generalTrack["RA"], generalTrack["DEC"] = ([] for i in range(10))
+            generalParkin = {}
+            generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["dfacc"], generalParkin["dfbm"], generalParkin["name"], generalParkin["addText"], generalParkin["RA"], generalParkin["DEC"] = ([] for i in range(10))
+            generalParkout = {}
+            generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["dfacc"], generalParkout["dfbm"], generalParkout["name"], generalParkout["addText"], generalParkout["RA"], generalParkout["DEC"] = ([] for i in range(10))
+            generalGotopos = {}
+            generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["dfacc"], generalGotopos["dfbm"], generalGotopos["name"], generalGotopos["addText"], generalGotopos["RA"], generalGotopos["DEC"] = ([] for i in range(10))
+            types = database.getOperationTypes(database)
+            foundType = None
+            for element in data:
+                for type in types:
+                    if str(type["_id"]) == element["type"]:
+                        foundType =  type["name"]
+                stringTime = element["Sdate"]+" "+element["Stime"]
+                tmin = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
+                stringTime = element["Edate"]+" "+element["Etime"]
+                tmax = datetime.strptime(stringTime, '%Y-%m-%d %H:%M:%S').timestamp()
+                print("Getting data from mongo")
+                position = database.getPosition(database, tmin, tmax)
+                loadPin = database.getLoadPin(database, tmin, tmax)
+                track = database.getTrack(database, tmin, tmax)
+                torque = database.getTorque(database, tmin, tmax)
+                accuracy = database.getAccuracy(database, tmin, tmax)
+                bendModel = database.getBM(database, tmin, tmax)
+                dfpos = pd.DataFrame.from_dict(position)
+                dfloadpin = pd.DataFrame.from_dict(loadPin)
+                dftrack = pd.DataFrame.from_dict(track) 
+                dftorque = pd.DataFrame.from_dict(torque) 
+                dfbm = pd.DataFrame.from_dict(bendModel) 
+                dfacc = pd.DataFrame.from_dict(accuracy)
+                file = element["file"].split("/")
+                file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+                print("Making sections")
+                if foundType == "Track":
+                    generalTrack["dfpos"].append(dfpos)
+                    generalTrack["dfloadpin"].append(dfloadpin)
+                    generalTrack["dftrack"].append(dftrack)
+                    generalTrack["dftorque"].append(dftorque)
+                    if dfacc is not None and dfacc.empty != True:
+                        generalTrack["dfacc"].append(dfacc)
+                    if dfbm is not None and dfacc.empty != True:
+                        generalTrack["dfbm"].append(dfbm)
+                    filename = "Track-"+datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d")+"-"+datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d")
+                    generalTrack["name"] = file+"/"+filename+".html"
+                    generalTrack["addText"] = element["addText"]
+                    generalTrack["RA"].append(element["RA"])
+                    generalTrack["DEC"].append(element["DEC"])
+                if foundType == "Park-in":
+                    generalParkin["dfpos"].append(dfpos)
+                    generalParkin["dfloadpin"].append(dfloadpin)
+                    generalParkin["dftrack"].append(dftrack)
+                    generalParkin["dftorque"].append(dftorque)
+                    if dfacc is not None and dfacc.empty != True:
+                        generalParkin["dfacc"].append(dfacc)
+                    if dfbm is not None and dfacc.empty != True:
+                        generalParkin["dfbm"].append(dfbm)
+                    filename ="Park-in-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                    generalParkin["name"] = file+"/"+filename+".html"
+                    generalParkin["addText"] = element["addText"]
+                    generalParkin["RA"].append(element["RA"])
+                    generalParkin["DEC"].append(element["DEC"])
+                if foundType == "Park-out":
+                    generalParkout["dfpos"].append(dfpos)
+                    generalParkout["dfloadpin"].append(dfloadpin)
+                    generalParkout["dftrack"].append(dftrack)
+                    generalParkout["dftorque"].append(dftorque)
+                    if dfacc is not None and dfacc.empty != True:
+                        generalParkout["dfacc"].append(dfacc)
+                    if dfbm is not None and dfbm.empty != True:
+                        generalParkout["dfbm"].append(dfbm)
+                    filename = "Park-out-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                    generalParkout["name"] = file+"/"+filename+".html"
+                    generalParkout["addText"] = element["addText"]
+                    generalParkout["RA"].append(element["RA"])
+                    generalParkout["DEC"].append(element["DEC"])
+                if foundType == "GoToPos":
+                    generalGotopos["dfpos"].append(dfpos)
+                    generalGotopos["dfloadpin"].append(dfloadpin)
+                    generalGotopos["dftrack"].append(dftrack)
+                    generalGotopos["dftorque"].append(dftorque)
+                    if dfacc is not None and dfacc.empty != True:
+                        generalGotopos["dfacc"].append(dfacc)
+                    if dfbm is not None and dfacc.empty != True:
+                        generalGotopos["dfbm"].append(dfbm)
+                    filename = "GoToPos-"+str(datetime.fromtimestamp(operation[0]["Tmin"]).strftime("%Y-%m-%d"))+"-"+str(datetime.fromtimestamp(operation[0]["Tmax"]).strftime("%Y-%m-%d"))
+                    generalGotopos["name"] = file+"/"+filename+".html"
+                    generalGotopos["addText"] = element["addText"]
+                    generalGotopos["RA"].append(element["RA"])
+                    generalGotopos["DEC"].append(element["DEC"])
+            print("Generating figures")
+            try:
+                figuresFunctions.FigureTrack(generalTrack["addText"], generalTrack["dfpos"], generalTrack["dfloadpin"], generalTrack["dftrack"], generalTrack["dftorque"], generalTrack["name"])
+                figuresFunctions.FigureTrack(generalParkin["addText"], generalParkin["dfpos"], generalParkin["dfloadpin"], generalParkin["dftrack"], generalParkin["dftorque"], generalParkin["name"])
+                figuresFunctions.FigureTrack(generalParkout["addText"], generalParkout["dfpos"], generalParkout["dfloadpin"], generalParkout["dftrack"], generalParkout["dftorque"], generalParkout["name"])
+                figuresFunctions.FigureTrack(generalGotopos["addText"], generalGotopos["dfpos"], generalGotopos["dfloadpin"], generalGotopos["dftrack"], generalGotopos["dftorque"], generalGotopos["name"])
+            except Exception as e: 
+                print("Track plots could not be generated: "+str(e))
+            try:
+                if len(generalTrack["dfacc"]) != 0:
+                    figuresFunctions.FigAccuracyTime(generalTrack["dfacc"], generalTrack["name"])
+                if len(generalParkin["dfacc"]) != 0:
+                    figuresFunctions.FigAccuracyTime(generalParkin["dfacc"], generalParkin["name"])
+                if len(generalParkout["dfacc"]) != 0:
+                    figuresFunctions.FigAccuracyTime(generalParkout["dfacc"], generalParkout["name"])
+                if len(generalGotopos["dfacc"]) != 0:
+                    figuresFunctions.FigAccuracyTime(generalGotopos["dfacc"], generalGotopos["name"])
+            except Exception as e:
+                print("Precision plots could not be generated: "+str(e))
+        except Exception as e:
+            print("There was no general data or data had an error: "+str(e))
+        try:
+            path = None
+            if generalTrack != None:
+                path = generalTrack["name"]
+            else:
+                path = "html/Log_cmd."+date
+            if path != None:
+                figuresFunctions.FigureLoadPin(database.getAllLoadPin(database, date), path, date)
+        except Exception as e:
+            print("Load Pin plots could not be generated: "+str(e))
         #This section is to create the final plots on the track area but is not implemented
         """ if len(generalTrack["dfbm"]) != 0:
             figuresFunctions.FigureRADec(generalTrack["dfpos"], generalTrack["dfbm"], generalTrack["RA"], generalTrack["DEC"], generalTrack["dfacc"], generalTrack["dftrack"], generalTrack["name"])

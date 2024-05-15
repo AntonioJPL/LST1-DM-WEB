@@ -53,6 +53,16 @@ def getDate(filename,cmdstring):
             xbeg.append(begtimes)
             generallog.append([begtime,cmdstring])
     return xbeg
+#Function to get the fist data
+def getFirstDate(filename):
+    f = open(filename, "r")
+    lines = f.readlines()
+    val =lines[0].split(' ')
+    #These are ANSI color codes being removed
+    stringtime = val[0].replace("\x1b[32;1m","").replace("\x1b[m","").replace("\x1b[35;1m","").replace("\x1b[31;1m","")+ " " + val[1]
+    stringtime = datetime.strptime(stringtime, "%d/%m/%y %H:%M:%S")
+    stringtime = stringtime.timestamp()
+    return stringtime
 #Used in getAllDate function, recieves the filename and a string containing the text we are searching. Returns 3 values: ra, dec and radetime
 def getRADec(filename,cmdstring):
     f = open(filename, "r") 
@@ -437,15 +447,15 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     #This is the automatized check on the plots being generated a week before the executed date
     dirCopy = dirname
     checkPlots(dirCopy, filename)
-    firstData = getDate(filename, "Drive")
+    firstData = getFirstDate(filename)
     lastDate = None
-    actualDate = getDateAndLine(filename, "Drive")
+    actualDate = getDateAndLine(filename, "DriveSetup")
     actualDate = actualDate[1][0].split(" ")
     actualDate = actualDate[0]
     actualDate = actualDate.split("/")
     actualDate = "20"+actualDate[2]+"/"+actualDate[1]+"/"+actualDate[0]
     try:
-        date = datetime.fromtimestamp(firstData[0])
+        date = datetime.fromtimestamp(firstData)
         req = MongoDb.checkDates(MongoDb, date.strftime("%Y-%m-%d"))
         lastDate = req["lastDate"]
     except Exception as e: 

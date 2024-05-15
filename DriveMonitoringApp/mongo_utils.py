@@ -159,7 +159,9 @@ class MongoDb:
             pass
     #Function that stores a loadpin entry        
     def storeLoadPin(self, data):
+        print(len(self.dbname["Load_Pin"].index_information()))
         if len(self.dbname["Load_Pin"].index_information()) == 1:
+            #The index is not being created? FIX
             self.dbname["Load_Pin"].create_index([('T', pymongo.ASCENDING), ("LoadPin", pymongo.ASCENDING), ("Load", pymongo.ASCENDING)], unique=True)
         try: 
             self.dbname["Load_Pin"].insert_many(data)

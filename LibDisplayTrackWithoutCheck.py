@@ -112,10 +112,11 @@ def getPos(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3)
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2 
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    for rows in df.to_dict('records'):
+    df_dict = df.to_dict('records')
+    for rows in df_dict:
         rows["T"] = str(rows["T"].timestamp()).replace(".", "")
         rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
-        MongoDb.storePosition(MongoDb, rows)
+    MongoDb.storePosition(MongoDb, df_dict)
 #Used in GenerateFig.  
 def getBM(filename,tmin,tmax):    
     dfBM = pd.read_csv(filename,sep=' ',header=None)
@@ -129,8 +130,8 @@ def getBM(filename,tmin,tmax):
     maskt3 = dfBM['T']<1615161600
     maskT2 = np.logical_and(maskt2,maskt3)
     dfBM['T'] = dfBM['T'] + maskT1*-2 + maskT2*-2
-    for rows in dfBM.to_dict('records'):
-        MongoDb.storeBendModel(MongoDb, rows)      
+    df_dict = dfBM.to_dict('records')
+    MongoDb.storeBendModel(MongoDb, df_dict)      
 def getPrecision(filename,tmin,tmax):    
     df = pd.read_csv(filename,sep=' ',header=None)
     df.columns = ['T','Azmean','Azmin','Azmax','Zdmean','Zdmin','Zdmax']
@@ -154,10 +155,11 @@ def getPrecision(filename,tmin,tmax):
     mask0_2 = df['Zdmean']!=0. #This is why data is being ignored
     mask0 = np.logical_and(mask0_2,mask0_1)
     df = df[mask0]
-    for rows in df.to_dict('records'):
+    df_dict = df.to_dict('records')
+    for rows in df_dict:
         rows["T"] = str(rows["T"].timestamp()).replace(".", "")
         rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
-        MongoDb.storeAccuracy(MongoDb, rows)
+    MongoDb.storeAccuracy(MongoDb, df_dict)
 #Works as getDate but returns date and line of the found cmdstring
 def getDateAndLine(filename,cmdstring):
     f = open(filename, "r") 
@@ -192,10 +194,11 @@ def getTorqueNew(filename,tmin,tmax):
     maskT2 = np.logical_and(maskt2,maskt3)
     df['T'] = df['T'] + maskT1*-2 + maskT2*-2
     df['T'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    for rows in df.to_dict('records'):
+    df_dict = df.to_dict('records')
+    for rows in df_dict:
         rows["T"] = str(rows["T"].timestamp()).replace(".", "")
         rows["T"] = int(rows["T"].ljust(2+len(rows["T"]), '0'))
-        MongoDb.storeTorque(MongoDb, rows)
+    MongoDb.storeTorque(MongoDb, df_dict)
 ##### READ TRACK VALUES
 def getTrackNew(filename3,tmin,tmax):
     print("getTrack %s %s %s"%(filename3,tmin,tmax))
@@ -212,10 +215,11 @@ def getTrackNew(filename3,tmin,tmax):
     mask0 = df['vsT0']!=0
     df = df[mask0]
     df['Tth'] = df['T'].apply(lambda d: datetime.fromtimestamp(d, tz=pytz.utc))
-    for rows in df.to_dict('records'):
+    df_dict = df.to_dict('records')
+    for rows in df_dict:
         rows["Tth"] = str(rows["Tth"].timestamp()).replace(".", "")
         rows["Tth"] = int(rows["Tth"].ljust(2+len(rows["Tth"]), '0'))
-        MongoDb.storeTrack(MongoDb, rows)
+    MongoDb.storeTrack(MongoDb, df_dict)
 ##### READ LOAD PIN
 def getLoadPin(filename2):
     print("getLoadPin %s"%(filename2))
@@ -224,21 +228,24 @@ def getLoadPin(filename2):
     t0=datetime(1970,1,1)
     pst = pytz.timezone('UTC')
     t0 = pst.localize(t0)
-    f2 = open(filename2, "r") 
-    df=pd.DataFrame(columns=['T','LoadPin','Load'])
+    f2 = open(filename2, "r")
     lp=0
     lpval=0
     values = 0
-    for line in f2.readlines():
+    pins = []
+    lines = f2.readlines()
+    for line in lines:
+        values += 1
         val=line.split(' ')
         dval = int(val[0])
         lp=int(val[1])
         for v in range(2,len(val)):
-            values += 1
             dvalinc = int(dval) + (v-2)*0.1
             lpval=int(val[v].replace("\n",""))
-            MongoDb.storeLoadPin(MongoDb, {'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
-#Used in checkDate and checkDatev2
+            pins.append({'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
+    print("Storing the data")
+    MongoDb.storeLoadPin(MongoDb, pins)
+#Used in checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
     print("GenerateFig %s %s %s %s %s %s %s "%(filename,filename2,filename3,tmin,tmax,ttrack,figname))
     #Position log.
@@ -370,60 +377,68 @@ def checkDatev2(cmd,beg,end,error,stop,track,repos,filename,filename2,filename3,
             GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status[-1],trackok2,figname.replace(" ",""),type,addtext,raok2,decok2)
 #Stores the logs and the opreation into mongodb
 def storeLogsAndOperation(logsorted):
-    logs = []
-    data = {}
-    operationTmin = None
-    operationTmax = datetime.timestamp(logsorted[len(logsorted)-1][0])
-    operationDate = logsorted[0][0].strftime("%Y-%m-%d")
-    commandPosition = None
-    for i in range(0,len(logsorted)):
-        if logsorted[i][1].find("action error")!= -1 and commandPosition != None :
-            logs[commandPosition]["LogStatus"] = "Error"
-            commandPosition = None
-        if logsorted[i][1].find("StopDrive")!= -1  and commandPosition != None :
-                logs[commandPosition]["LogStatus"] = "Stopped"
-                commandPosition = None
-        if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1:    
-            if logsorted[i][1].find("Park_Out Done")!= -1 and commandPosition != None :
-                logs[commandPosition]["LogStatus"] = "Finished"
-                commandPosition = None
-            if logsorted[i][1].find("Park_In Done")!= -1 and commandPosition != None :
-                logs[commandPosition]["LogStatus"] = "Finished"
-                commandPosition = None
-            if logsorted[i][1].find("GoToTelescopePosition Done")!= -1 and commandPosition != None :
-                logs[commandPosition]["LogStatus"] = "Finished"
-                commandPosition = None
-            if logsorted[i][1].find("Start_Tracking Done received")!= -1 and commandPosition != None :
-                logs[commandPosition]["LogStatus"] = "Finished"
-                commandPosition = None
-        if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1:
-            commandPosition = i
-        else:
-            data["LogStatus"] = None
-        if len(logsorted[i][1].split(" ")) <= 2:
-            data["Command"] = logsorted[i][1]
-            data["Status"] = None
-        else:
-            logParts = logsorted[i][1].split(" ")
-            data["Command"] = logParts[0]
-            data["Status"] = logParts[1]+" "+logParts[2]
-        data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
-        data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
-        if operationTmin == None and commandPosition != None:
-            operationTmin = datetime.timestamp(logsorted[commandPosition][0])
-        logs.append(data)
+    try: 
+        logs = []
         data = {}
-    for element in logs:
-        if element["Command"] != "Drive":
-            MongoDb.storeLogs(MongoDb, element)
-    MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
-    operationTimes.append(operationTmin)
-    operationTimes.append(operationTmax)
+        operationTmin = None
+        operationTmax = datetime.timestamp(logsorted[len(logsorted)-1][0])
+        operationDate = logsorted[0][0].strftime("%Y-%m-%d")
+        commandPosition = None
+        for i in range(0,len(logsorted)):
+            if logsorted[i][1].find("action error")!= -1 and commandPosition != None :
+                logs[commandPosition]["LogStatus"] = "Error"
+                commandPosition = None
+            if logsorted[i][1].find("StopDrive")!= -1  and commandPosition != None :
+                    logs[commandPosition]["LogStatus"] = "Stopped"
+                    commandPosition = None
+            if i == len(logsorted)-1 or logsorted[i+1][1].find("Park_Out command sent") != -1 or logsorted[i+1][1].find("Park_In command sent") != -1 or logsorted[i+1][1].find("GoToPosition") != -1 or logsorted[i+1][1].find("Start Tracking") != -1 or logsorted[i+1][1].find("Drive") != -1:    
+                if logsorted[i][1].find("Park_Out Done")!= -1 and commandPosition != None :
+                    logs[commandPosition]["LogStatus"] = "Finished"
+                    commandPosition = None
+                if logsorted[i][1].find("Park_In Done")!= -1 and commandPosition != None :
+                    logs[commandPosition]["LogStatus"] = "Finished"
+                    commandPosition = None
+                if logsorted[i][1].find("GoToTelescopePosition Done")!= -1 and commandPosition != None :
+                    logs[commandPosition]["LogStatus"] = "Finished"
+                    commandPosition = None
+                if logsorted[i][1].find("Start_Tracking Done received")!= -1 and commandPosition != None :
+                    logs[commandPosition]["LogStatus"] = "Finished"
+                    commandPosition = None
+            if logsorted[i][1].find("Park_Out command sent") != -1 or logsorted[i][1].find("Park_In command sent") != -1 or logsorted[i][1].find("GoToPosition") != -1 or logsorted[i][1].find("Start Tracking") != -1:
+                if commandPosition != None:
+                    logs[commandPosition]["LogStatus"] = "Unknown"
+                    commandPosition = i
+                else:
+                    commandPosition = i
+            else:
+                data["LogStatus"] = None
+            if len(logsorted[i][1].split(" ")) <= 2:
+                data["Command"] = logsorted[i][1]
+                data["Status"] = None
+            else:
+                logParts = logsorted[i][1].split(" ")
+                data["Command"] = logParts[0]
+                data["Status"] = logParts[1]+" "+logParts[2]
+            data["Date"] = logsorted[i][0].strftime("%Y-%m-%d")
+            data["Time"] = logsorted[i][0].strftime("%H:%M:%S")
+            if operationTmin == None and commandPosition != None:
+                operationTmin = datetime.timestamp(logsorted[commandPosition][0])
+            logs.append(data)
+            data = {}
+        for element in logs:
+            if element["Command"] != "Drive":
+                MongoDb.storeLogs(MongoDb, element)
+        if operationTmin != None and operationTmax != None and operationDate != None:
+            MongoDb.storeOperation(MongoDb, {"Date": operationDate, "Tmin": operationTmin, "Tmax": operationTmax})
+            operationTimes.append(operationTmin)
+            operationTimes.append(operationTmax)
+    except Exception as e:
+        print("Logs could not be stored: "+str(e))
 #Function that recieves all the Log File names and 
-def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
+def getAllDate(filename,filename2,filename3,filename4,filename5, date, lastone=0):
     dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
     generallog.clear()
-    firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
+    firstData = date
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
     trackcmdinitiale = getDate(filename,"Start Tracking")
@@ -457,43 +472,46 @@ def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     storeLogsAndOperation(generallogsorted)
-    if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
-        dirParts = dirname.split("/")
-        if path.exists(dirname.replace("/"+dirParts[-1], "")) == False:
-            os.mkdir(dirname.replace("/"+dirParts[-1], ""))
-        if path.exists(dirname)==False :
-            os.mkdir(dirname)
-    if len(trackbeg) != 0:
-        if path.exists(dirname+"/Track")==False :
-                os.mkdir(dirname+"/Track")
-        print("====== Track =======")
-        selectedType = "1"
-        checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
-    if lastone ==0 :
-        if len(parkoutbeg) != 0:
-            if path.exists(dirname+"/Parkout")==False :
-                    os.mkdir(dirname+"/Parkout")
-            print("====== Parkout =======")
-            selectedType = "2"
-            checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
-        if len(parkinbeg) != 0:
-            if path.exists(dirname+"/Parkin")==False :
-                    os.mkdir(dirname+"/Parkin")
-            print("====== Parkin =======")
-            selectedType = "3"
-            checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
-        if len(gotobeg) != 0:
-            if path.exists(dirname+"/GoToPos")==False :
-                    os.mkdir(dirname+"/GoToPos")
-            print("====== GoToPos =======")
-            selectedType = "4"
-            checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+    if len(operationTimes) > 0:
+        if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
+            dirParts = dirname.split("/")
+            if path.exists(dirname.replace("/"+dirParts[-1], "")) == False:
+                os.mkdir(dirname.replace("/"+dirParts[-1], ""))
+            if path.exists(dirname)==False :
+                os.mkdir(dirname)
+        if len(trackbeg) != 0:
+            if path.exists(dirname+"/Track")==False :
+                    os.mkdir(dirname+"/Track")
+            print("====== Track =======")
+            selectedType = "1"
+            checkDatev2(trackcmd,trackbeg,trackend,trackerror,generalstop,track,None,filename2,filename3,filename4,filename5,dirname+"/Track"+"/Track",generalTypes[selectedType],0,"Tracking",lastone,azparam,azparamline,elparam,elparamline,ra,dec)
+        if lastone ==0 :
+            if len(parkoutbeg) != 0:
+                if path.exists(dirname+"/Parkout")==False :
+                        os.mkdir(dirname+"/Parkout")
+                print("====== Parkout =======")
+                selectedType = "2"
+                checkDatev2(parkoutcmd,parkoutbeg,parkoutend,parkouterror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkout"+"/Parkout",generalTypes[selectedType],0,"ParkOut")
+            if len(parkinbeg) != 0:
+                if path.exists(dirname+"/Parkin")==False :
+                        os.mkdir(dirname+"/Parkin")
+                print("====== Parkin =======")
+                selectedType = "3"
+                checkDatev2(parkincmd,parkinbeg,parkinend,parkinerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/Parkin"+"/Parkin",generalTypes[selectedType],1,"ParkIn")
+            if len(gotobeg) != 0:
+                if path.exists(dirname+"/GoToPos")==False :
+                        os.mkdir(dirname+"/GoToPos")
+                print("====== GoToPos =======")
+                selectedType = "4"
+                checkDatev2(gotocmd,gotobeg,gotoend,gotoerror,generalstop,None,None,filename2,filename3,filename4,filename5,dirname+"/GoToPos"+"/GoToPos",generalTypes[selectedType],0,"GoToPsition")
+    else:
+        print("There is no general data or there was an error")
     getLoadPin(filename3)
     try: 
         if firstData is not None:
-            req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[firstData])
-    except Exception:
-        print("Plot was not generated because there is no conection to Django or there was a problem.")
+            req = requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[[firstData]])
+    except Exception as e:
+        print("Plot was not generated because there is no conection to Django or there was a problem: "+str(e))
     print("END TIME")
     print(datetime.now().strftime("%H:%M:%S"))
 #Function to run the previous days script

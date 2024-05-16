@@ -806,7 +806,6 @@ const startInputButtons = ()=>{
                 if(generalData.data[0] != undefined){
                     if(value != generalData.data[0].data[0]["Sdate"]){
                         changeTitleAndFetch(value)
-                        
                     }
                 }else{
                     changeTitleAndFetch(value)

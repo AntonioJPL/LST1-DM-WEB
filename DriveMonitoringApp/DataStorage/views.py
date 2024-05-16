@@ -244,8 +244,13 @@ def generateDatePlots(request):
     if request.method == "POST":
         userdict = json.loads(str(request.body,encoding='utf-8'))
         userdict = userdict[0][0]
-        dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
-        generatePlots(dateTime)
+        dateTime = None
+        try: 
+            dateTime = datetime.fromtimestamp(int(userdict)).strftime("%Y-%m-%d")
+        except Exception as e:
+            dateTime = userdict
+        if dateTime is not None:
+            generatePlots(dateTime)
         return HttpResponse("The plots have been generated")
     
 

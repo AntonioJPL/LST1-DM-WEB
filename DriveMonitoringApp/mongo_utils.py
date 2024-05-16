@@ -136,7 +136,8 @@ class MongoDb:
 
         try:
             self.dbname["Logs"].insert_one(data)
-        except Exception:
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a data entry
     def storeGeneralData(self, data):
@@ -147,57 +148,63 @@ class MongoDb:
         try:
             self.dbname["Data"].insert_one(data)
             return True
-        except Exception:
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a position entry
     def storePosition(self, data):
         if len(self.dbname["Position"].index_information()) == 1:
             self.dbname["Position"].create_index([('T', pymongo.ASCENDING), ("Az", pymongo.ASCENDING), ("ZA", pymongo.ASCENDING)], unique=True)
         try:
-            self.dbname["Position"].insert_one(data)
-        except Exception:
+            self.dbname["Position"].insert_many(data, False)
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a loadpin entry        
     def storeLoadPin(self, data):
-        print(len(self.dbname["Load_Pin"].index_information()))
-        if len(self.dbname["Load_Pin"].index_information()) == 1:
+        if len(self.dbname["Load_Pin"].index_information()) < 1:
             #The index is not being created? FIX
             self.dbname["Load_Pin"].create_index([('T', pymongo.ASCENDING), ("LoadPin", pymongo.ASCENDING), ("Load", pymongo.ASCENDING)], unique=True)
         try: 
-            self.dbname["Load_Pin"].insert_many(data)
-        except Exception:
+            self.dbname["Load_Pin"].insert_many(data, False)
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a track entry
     def storeTrack(self, data):
         if len(self.dbname["Track"].index_information()) == 1:
             self.dbname["Track"].create_index([('T', pymongo.ASCENDING), ("Azth", pymongo.ASCENDING), ("ZAth", pymongo.ASCENDING), ("vsT0", pymongo.ASCENDING), ("Tth", pymongo.ASCENDING)], unique=True)
         try:
-            self.dbname["Track"].insert_one(data)
-        except Exception:
+            self.dbname["Track"].insert_many(data, False)
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a torque entry               
     def storeTorque(self, data):
         if len(self.dbname["Torque"].index_information()) == 1:
             self.dbname["Torque"].create_index([('T', pymongo.ASCENDING), ("Az1_mean", pymongo.ASCENDING), ("Az1_min", pymongo.ASCENDING), ("Az1_max", pymongo.ASCENDING), ("Az2_mean", pymongo.ASCENDING), ("Az2_min", pymongo.ASCENDING), ("Az2_max", pymongo.ASCENDING), ("Az3_mean", pymongo.ASCENDING), ("Az3_min", pymongo.ASCENDING), ("Az3_max", pymongo.ASCENDING), ("Az4_mean", pymongo.ASCENDING), ("Az4_min", pymongo.ASCENDING), ("Az4_max", pymongo.ASCENDING), ("El1_mean", pymongo.ASCENDING), ("El1_min", pymongo.ASCENDING), ("El1_max", pymongo.ASCENDING), ("El2_mean", pymongo.ASCENDING), ("El2_min", pymongo.ASCENDING), ("El2_max", pymongo.ASCENDING)], unique=True)
         try:
-            self.dbname["Torque"].insert_one(data)
-        except Exception:
+            self.dbname["Torque"].insert_many(data, False)
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a accuracy entry    
     def storeAccuracy(self, data):
         if len(self.dbname["Accuracy"].index_information()) == 1:
             self.dbname["Accuracy"].create_index([('T', pymongo.ASCENDING), ("Azmean", pymongo.ASCENDING), ("Azmin", pymongo.ASCENDING), ("Azmax", pymongo.ASCENDING), ("Zdmean", pymongo.ASCENDING), ("Zdmin", pymongo.ASCENDING), ("Zdmax", pymongo.ASCENDING)], unique=True)
         try:
-            self.dbname["Accuracy"].insert_one(data)
-        except Exception:
+            self.dbname["Accuracy"].insert_many(data, False)
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that stores a bend_model entry        
     def storeBendModel(self, data):
         if len(self.dbname["Bend_Model"].index_information()) == 1:
             self.dbname["Bend_Model"].create_index([('T', pymongo.ASCENDING), ("AzC", pymongo.ASCENDING), ("ZAC", pymongo.ASCENDING)], unique=True)
         try:
-            self.dbname["Bend_Model"].insert_one(data)
-        except Exception:
+            self.dbname["Bend_Model"].insert_many(data, False)
+        except Exception as e:
+            #print("error: "+str(e))
             pass
     #Function that returns true if there is data on the Data collection or false if there is not           
     def isData(self):
@@ -405,26 +412,18 @@ class MongoDb:
         return list(self.dbname["Types"].find())
     #Function that generates the Load Pin plot url and returns them. It generates the url based on the data "file" parameter and replaces the end of it with the found plot path.
     def getLPPlots(self, date):
-        operation = list(self.dbname["Operations"].find({"Date": date}))
-        if len(operation) > 0:
-            start = datetime.fromtimestamp(operation[0]["Tmin"])
-            start = str(start).split(" ")
-            data = self.dbname["Data"].find_one({"Sdate": date, "Stime": {"$gte": start[1]}})
-            path = data["file"]
-            pathParts = path.split("/")
-            path = path.replace(pathParts[-2]+"/"+pathParts[-1], "LoadPin")
-            file = finders.find(path)
-            if file is not None:
-                files = glob.glob(file+"/"+"LoadPin_"+date+"*")
-                plots = []
-                for i in range(0, len(files)):
-                    files[i] = files[i].split("/")
-                    files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
-                    plots.append(files[i])
-                if len(plots) > 0:
-                    return {"plots": plots}
-                else:
-                    return {"Message": "There is no data to show"}
+        newPath = "DriveMonitoringApp/DataStorage/static/html/Log_cmd."+date+"/LoadPin"
+        file = os.path.abspath(newPath)
+        if file is not None:
+            files = glob.glob(file+"/"+"LoadPin_"+date+"*")
+            print(files)
+            plots = []
+            for i in range(0, len(files)):
+                files[i] = files[i].split("/")
+                files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                plots.append(files[i])
+            if len(plots) > 0:
+                return {"plots": plots}
             else:
                 return {"Message": "There is no data to show"}
         else:

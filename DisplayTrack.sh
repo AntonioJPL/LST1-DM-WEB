@@ -30,6 +30,6 @@ ln -s ./DrivePositioning/Track_log_${an2}${an}${mo}${jo}.txt .
 ln -s ./DrivePositioning/Torque_log_${an2}${an}${mo}${jo}.txt .
 ln -s ./DrivePositioning/BendingModelCorrection_log_${an2}${an}${mo}${jo}.txt .
 #Executes the Python script passing the filenames values
-python3 DisplayTrack.py cmd.${an2}${an}-${mo}-${jo} DrivePosition_log_${an2}${an}${mo}${jo}.txt loadpin_log_${an}_${mo}_${jo}.txt Track_log_${an2}${an}${mo}${jo}.txt Torque_log_${an2}${an}${mo}${jo}.txt
+python3 DisplayTrack.py cmd.${an2}${an}-${mo}-${jo} DrivePosition_log_${an2}${an}${mo}${jo}.txt loadpin_log_${an}_${mo}_${jo}.txt Track_log_${an2}${an}${mo}${jo}.txt Torque_log_${an2}${an}${mo}${jo}.txt ${an2}${an}-${mo}-${jo}
 #Delete all the created files for the script
 rm -f loadpin_log_${an}_${mo}_${jo}.txt cmd.${an2}${an}-${mo}-${jo} R_loadpin_log_${an}_${mo}_${jo}.txt DrivePosition_log_${an2}${an}${mo}${jo}.txt Accuracy_log_${an2}${an}${mo}${jo}.txt R_loadpin_log_${an2}${an}${mo}${jo}.txt Track_log_${an2}${an}${mo}${jo}.txt Torque_log_${an2}${an}${mo}${jo}.txt BendingModelCorrection_log_${an2}${an}${mo}${jo}.txt 

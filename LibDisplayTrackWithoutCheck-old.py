@@ -228,24 +228,24 @@ def getLoadPin(filename2):
     t0=datetime(1970,1,1)
     pst = pytz.timezone('UTC')
     t0 = pst.localize(t0)
-    f2 = open(filename2, "r")
+    f2 = open(filename2, "r") 
+    df=pd.DataFrame(columns=['T','LoadPin','Load'])
     lp=0
     lpval=0
     values = 0
     pins = []
-    lines = f2.readlines()
-    for line in lines:
-        values += 1
+    for line in f2.readlines():
         val=line.split(' ')
         dval = int(val[0])
         lp=int(val[1])
         for v in range(2,len(val)):
+            values += 1
             dvalinc = int(dval) + (v-2)*0.1
             lpval=int(val[v].replace("\n",""))
             pins.append({'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
     print("Storing the data")
     MongoDb.storeLoadPin(MongoDb, pins)
-#Used in checkDatev2
+#Used in checkDate and checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
     print("GenerateFig %s %s %s %s %s %s %s "%(filename,filename2,filename3,tmin,tmax,ttrack,figname))
     #Position log.
@@ -435,47 +435,10 @@ def storeLogsAndOperation(logsorted):
     except Exception as e:
         print("Logs could not be stored: "+str(e))
 #Function that recieves all the Log File names and 
-def getAllDate(filename,filename2,filename3,filename4,filename5, date, lastone=0):
+def getAllDate(filename,filename2,filename3,filename4,filename5,lastone=0):
     dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
-    if len(MongoDb.dbname.list_collection_names()) == 0:
-        MongoDb.__init__(MongoDb)
     generallog.clear()
-    f = open(filename, 'r')
-    #This is the automatized check on the plots being generated a week before the executed date
-    firstData = date
-    if len(f.readlines()) > 0:
-        dirCopy = dirname
-        checkPlots(dirCopy, filename, date)
-        lastDate = None
-        actualDate = date
-        actualDate = actualDate.replace("-", "/")
-        try:
-            req = MongoDb.checkDates(MongoDb, firstData)
-            lastDate = req["lastDate"]
-        except Exception as e: 
-            print("Could not check if data is up to date. Storing actual date... %s", repr(e))
-            lastDate = None
-        if lastDate is not True and lastDate is not None and lastDate is not False:
-            print("---------- The System is not up to date. Last data date on MongoDB: "+lastDate+" -----------")
-            print("Running missing days ...")
-            dateFormat = ("%Y/%m/%d")
-            if lastDate == "Empty":
-                lastDate = str(actualDate)[0:-2]+"01"
-                parsedLastDBDate = datetime.strptime(lastDate, dateFormat)-timedelta(days=1)
-                parsedActualDate = datetime.strptime(actualDate, dateFormat)
-                while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):
-                    parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
-                    asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
-            else:
-                lastDate = lastDate.replace("-", "/")
-                if lastDate < actualDate : 
-                    parsedLastDBDate = datetime.strptime(lastDate, dateFormat)
-                    parsedActualDate = datetime.strptime(actualDate, dateFormat)
-                    while parsedLastDBDate < (parsedActualDate-timedelta(days=1)):
-                        parsedLastDBDate = parsedLastDBDate + timedelta(days=1)
-                        asyncio.run(runFile(parsedLastDBDate.strftime(dateFormat)))
-    else:
-        print("There is no SentinelleOPCUA log file. Up to date check cant be done, storing and generating Load Pin information/Plots")
+    firstData = getDate(filename, "Drive Regulation Parameters Azimuth")
     #Genereal
     generalstop = getDate(filename,"StopDrive command sent")
     trackcmdinitiale = getDate(filename,"Start Tracking")
@@ -509,7 +472,6 @@ def getAllDate(filename,filename2,filename3,filename4,filename5, date, lastone=0
     print("START TIME")
     print(datetime.now().strftime("%H:%M:%S"))
     storeLogsAndOperation(generallogsorted)
-    print(len(operationTimes))
     if len(operationTimes) > 0:
         if len(parkoutbeg) != 0 or len(parkinbeg) != 0 or len(gotobeg) != 0 or len(trackbeg) != 0:
             dirParts = dirname.split("/")
@@ -556,21 +518,3 @@ def getAllDate(filename,filename2,filename3,filename4,filename5, date, lastone=0
 async def runFile(date):
     runfile = "sh DisplayTrack-NoCheck.sh %s" % (date)
     os.system(runfile)
-#Function to check if the plots are generated for the last 7 days
-def checkPlots(dirname, filename, date):
-    try:
-        last7Operations = MongoDb.getLast7Operations(MongoDb)
-        dashedDate = date
-        i = 0
-        try: 
-            while i < len(last7Operations):
-                operation = last7Operations[i]
-                generalDir = dirname.replace(dashedDate, operation["Date"])
-                directories = os.listdir(generalDir)
-                if len(os.listdir(generalDir+"/"+directories[0])) == 0:
-                    requests.post("http://127.0.0.1:8000/storage/plotGeneration", json=[[operation["Tmin"]]])
-                i += 1
-        except Exception as e:
-            print("Plot was not generated. Error: "+str(e))
-    except Exception as e:
-        print("There was an error or all the plots are already generated: "+str(e))

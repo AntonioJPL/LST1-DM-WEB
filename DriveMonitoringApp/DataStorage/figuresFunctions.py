@@ -305,15 +305,11 @@ def FigureRADec(dfpos,dfbm,ra,dec,dfacc,dftrack, path):
 def FigureLoadPin(dfloadpin, path, date):
     pathParts = path.split("/")
     newPath = None
-    print(len(pathParts))
     if len(pathParts) <= 2:
-        #newPath = pathParts[-4]+"/"+pathParts[-3]+"/"+"LoadPin"
-        print(path)
         newPath = "static/"+path+"/LoadPin"
         file = finders.find(newPath)
         if file is None:
-            file = os.path.abspath("/DriveMonitoringApp/DataStorage/static/"+path)
-            print(file)
+            file = os.path.abspath("DriveMonitoringApp/DataStorage/"+newPath)
             os.makedirs(file)
     else:
         newPath = pathParts[-4]+"/"+pathParts[-3]+"/LoadPin"
@@ -322,10 +318,8 @@ def FigureLoadPin(dfloadpin, path, date):
         print(file)
         if file is None:
             file = path.replace(pathParts[-4]+"/"+pathParts[-3]+"/"+pathParts[-2]+"/"+pathParts[-1], newPath)
-            print(file)
             os.mkdir(file)
     path = file+"/"+"LoadPin_"+date+".html"
-    print(path)
     fig = go.Figure()
     fig2 = go.Figure()
     dfloadpin = pd.DataFrame.from_dict(dfloadpin)

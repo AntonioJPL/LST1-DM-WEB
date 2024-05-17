@@ -235,15 +235,16 @@ def getLoadPin(filename2):
     pins = []
     lines = f2.readlines()
     for line in lines:
-        values += 1
         val=line.split(' ')
         dval = int(val[0])
         lp=int(val[1])
         for v in range(2,len(val)):
+            values += 1
             dvalinc = int(dval) + (v-2)*0.1
             lpval=int(val[v].replace("\n",""))
             pins.append({'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
     print("Storing the data")
+    print(values)
     MongoDb.storeLoadPin(MongoDb, pins)
 #Used in checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
@@ -437,6 +438,7 @@ def storeLogsAndOperation(logsorted):
 #Function that recieves all the Log File names and 
 def getAllDate(filename,filename2,filename3,filename4,filename5, date, lastone=0):
     dirname = "./DriveMonitoringApp/DataStorage/static/html/Log_" + filename
+    print("This is the no check script running for the date: "+date)
     generallog.clear()
     firstData = date
     #Genereal

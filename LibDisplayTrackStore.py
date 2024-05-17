@@ -235,15 +235,16 @@ def getLoadPin(filename2):
     pins = []
     lines = f2.readlines()
     for line in lines:
-        values += 1
         val=line.split(' ')
         dval = int(val[0])
         lp=int(val[1])
         for v in range(2,len(val)):
+            values += 1
             dvalinc = int(dval) + (v-2)*0.1
             lpval=int(val[v].replace("\n",""))
             pins.append({'T':str(dvalinc),'LoadPin':lp,'Load':lpval})
     print("Storing the data")
+    print(values)
     MongoDb.storeLoadPin(MongoDb, pins)
 #Used in checkDatev2
 def GenerateFig(filename,filename2,filename3,filename4,tmin,tmax,cmd_status,ttrack,figname="",type=None,addtext='',ra=None,dec=None):
@@ -554,6 +555,7 @@ def getAllDate(filename,filename2,filename3,filename4,filename5, date, lastone=0
     print(datetime.now().strftime("%H:%M:%S"))
 #Function to run the previous days script
 async def runFile(date):
+    print("Running file on date: "+date)
     runfile = "sh DisplayTrack-NoCheck.sh %s" % (date)
     os.system(runfile)
 #Function to check if the plots are generated for the last 7 days

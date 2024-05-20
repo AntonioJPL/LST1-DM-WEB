@@ -24,6 +24,7 @@ let sectionBody = null
 let filtersCard = null
 let filtersSection = null
 let sectionTitle = null
+let buttonHotPlot = null
 let graphicContents = null
 let plotSection = null
 let input = null
@@ -450,6 +451,28 @@ const initializeFiltersSection = ()=>{
     sectionTitle.appendChild(document.createTextNode("Filters"))
     sectionBody = document.createElement("div")
     sectionBody.classList.add("border", "border-[#325D88]", "border-[0.25rem]", "border-t-0", "w-full", "h-[10rem]", "rounded-b-lg", "flex", "flex-col", "items-center")
+    buttonHotPlot = document.createElement("div")
+    buttonHotPlot.classList.add("hotPlots", "rounded-xl", "bg-[#00004A]", "text-white", "flex", "items-center", "justify-center", "mt-5", "w-[12.5rem]", "p-2", "hover:cursor-pointer", "self-center", "text-xl", "border-[#00E4D8]", "border")
+    buttonHotPlot.appendChild(document.createTextNode("Create latest plots"))
+    buttonHotPlot.addEventListener("click", ()=>{
+        let loaderSpace = document.createElement("div")
+        loaderSpace.classList.add("w-[15%]", "h-full", "relative", "flex", "justify-center", "items-center")
+        let loaderBar = document.createElement("div")
+        loaderBar.classList.add("Bar", "rounded-full", "border-[#00E4D8]", "border","absolute" , "w-[3rem]", "h-[3rem]")
+        loaderSpace.appendChild(loaderBar)
+        let divHotPot = document.createElement("div")
+        divHotPot.classList.add("hotPotsMessage", "flex", "gap-x-1", "mt-3")
+        let message = document.createElement("p")
+        message.classList.add("select-none")
+        message.appendChild(document.createTextNode("Generating the plots...\n You will be redirected when they are generated."))
+        divHotPot.appendChild(loaderSpace)
+        divHotPot.appendChild(message)
+        if(filtersSection.children.length <= 2){
+            filtersSection.appendChild(divHotPot)
+        }
+        generateHotPlots()
+    })
+    filtersSection.appendChild(buttonHotPlot)
 }
 /**
  * Function to create the filter form and the inputs inside it
@@ -1008,4 +1031,21 @@ const createTopButton = ()=>{
         }
     })
     body.appendChild(topButton)
+}
+const generateHotPlots = async()=>{
+    let response = await fetch("http://127.0.0.1:8000/storage/generateHotPlots")
+    .then((res)=> res.json())
+    if(response.Message == null){
+        if(response.status == 123423){
+            window.location.replace("http://127.0.0.1:8000/driveMonitoring")
+        }else{
+            console.log(response.status)
+        }
+    }else{
+        let foundHotPotLoader = document.querySelector(".hotPotsMessage")
+        foundHotPotLoader.innerHTML = ""
+        let newMessage = document.createElement("p")
+        newMessage.appendChild(document.createTextNode(response.Message))
+        newMessage.classList("text-red-500")
+    }
 }

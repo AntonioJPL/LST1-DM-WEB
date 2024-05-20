@@ -32,4 +32,6 @@ urlpatterns = [
     path('storage/test', Sv.showTestView),
     path('storage/plotGeneration', Sv.generateDatePlots),
     path('storage/getLoadPins', Sv.getLoadPins),
+    path('storage/generateHotPlots', Sv.generateHotPlots),
+    path('storage/hotPlotGeneration', Sv.generateDriveHotPlots),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

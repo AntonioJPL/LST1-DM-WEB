@@ -77,31 +77,38 @@ class MongoDb:
     def listData(self, date):
         operation = list(self.dbname["Operations"].find({"Date": date}))
         if len(operation) == 1:
-            start = datetime.fromtimestamp(operation[0]["Tmin"])
-            start = str(start).split(" ")
-            end = datetime.fromtimestamp(operation[0]["Tmax"])
-            end = str(end).split(" ")
-            types = list(self.dbname["Types"].find())
-            elements = []
-            endDate = datetime.strptime(date.replace("-", ""), '%Y%m%d')
-            endDate += DT.timedelta(days=1)
-            for element in types:
-                plot = {}
-                plot["type"] = element["name"]
-                foundElement = list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}, {"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
-                if len(foundElement) > 0:
-                    file = foundElement[0]["file"].split("/")
-                    filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
-                    file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
-                    files = glob.glob(file+"/"+filename+"*")
-                    plot["file"] = []
-                    for i in range(0, len(files)):
-                        files[i] = files[i].split("/")
-                        files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
-                        plot["file"].append(files[i])
-                    plot["data"]=foundElement
-                    elements.append(plot)
-            return elements
+            try:
+                start = datetime.fromtimestamp(operation[0]["Tmin"])
+                start = str(start).split(" ")
+                end = datetime.fromtimestamp(operation[0]["Tmax"])
+                end = str(end).split(" ")
+                types = list(self.dbname["Types"].find())
+                elements = []
+                endDate = datetime.strptime(date.replace("-", ""), '%Y%m%d')
+                endDate += DT.timedelta(days=1)
+                for element in types:
+                    plot = {}
+                    plot["type"] = element["name"]
+                    foundElement = list(self.dbname["Data"].aggregate([{"$match":{"$or": [{"$and": [{"Sdate": start[0]}, {"Stime": {"$gte": start[1]}}]}, {"$and": [{"Edate": end[0]},{"Etime": {"$lte": end[1]}}]}]}}, {"$match": {"type": str(element["_id"])}}, {"$addFields": {"_id": {"$toString": "$_id"}, "type": plot["type"]}}]))
+                    if len(foundElement) > 0:
+                        file = foundElement[0]["file"].split("/")
+                        filename = element["name"]+"-"+date+"-"+str(endDate.strftime("%Y-%m-%d"))
+                        file = finders.find(file[0]+"/"+file[1]+"/"+file[2])
+                        files = glob.glob(file+"/"+filename+"*")
+                        if len(files) == 0:
+                            filename = element["name"]+"-"+date+"-"+date
+                            files = glob.glob(file+"/"+filename+"*")
+                        plot["file"] = []
+                        for i in range(0, len(files)):
+                            files[i] = files[i].split("/")
+                            files[i] = "static/"+files[i][-4]+"/"+files[i][-3]+"/"+files[i][-2]+"/"+files[i][-1]+"/"
+                            plot["file"].append(files[i])
+                        plot["data"]=foundElement
+                        elements.append(plot)
+                return elements
+            except Exception as e:
+                print("There was an error getting the data: "+str(e))
+                return {"Message": "There is no data to show"}
         if len(operation) == 0: 
             return {"Message": "There is no data to show"}
         if len(operation) > 1:

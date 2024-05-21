@@ -308,9 +308,11 @@ def FigureLoadPin(dfloadpin, path, date):
     if len(pathParts) <= 2:
         newPath = "static/"+path+"/LoadPin"
         file = finders.find(newPath)
+        print(newPath)
         if file is None:
             file = os.path.abspath("DriveMonitoringApp/DataStorage/"+newPath)
-            os.makedirs(file)
+            if not os.path.exists(file):
+                os.makedirs(file)
     else:
         newPath = pathParts[-4]+"/"+pathParts[-3]+"/LoadPin"
         print(newPath)
@@ -403,5 +405,5 @@ def FigureLoadPin(dfloadpin, path, date):
         )
         fig.update_yaxes(tickangle=7.5)
         fig2.update_yaxes(tickangle=7.5)
-        fig.write_html(path.replace(".html", "_LoadPins10X.html"))
-        fig2.write_html(path.replace(".html", "_LoadPins20X.html"))
+        fig.write_html(path.replace(".html", "_LoadPins10X.html"), full_html=False, include_plotlyjs='cdn')
+        fig2.write_html(path.replace(".html", "_LoadPins20X.html"), full_html=False, include_plotlyjs='cdn') #Added this two options to make the html file lighter, it causes a plotly.js to be loaded on the browser

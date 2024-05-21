@@ -235,8 +235,8 @@ def generatePlots(date, Hot = False):
 #TEST FUNC
 def showTestView(request):
     if request.method == "GET":
-        generatePlots("2024-02-27")
-        generatePlots("2024-02-06")
+        generatePlots("2024-02-09")
+        #generatePlots("2024-02-06")
         return render(request, "storage/testPLot.html")
     
 @csrf_exempt

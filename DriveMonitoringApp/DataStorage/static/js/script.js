@@ -161,6 +161,7 @@ const fetchLatestData = async(date = null) => {
             serverRes = await fetch("http://127.0.0.1:8000/storage/getLoadPins")
             .then(response => response.json())
         }
+        console.log(serverRes)
         if(serverRes.Message == null){
             startInputButtons()
             createTopButton()
@@ -951,7 +952,7 @@ const showLoadPins = (array) =>{
         newIframe.setAttribute("src", URLPath+element)
         newIframe.classList.add("w-[100%]", "h-[27.5rem]", "self-center")
         plotDiv.appendChild(newIframe)
-        if (element.includes("10")){
+        if (element.includes("10X")){
             let hundredCables = document.querySelector("div.hundred")
             hundredCables.appendChild(plotDiv)
         }else{
